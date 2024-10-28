@@ -71,7 +71,7 @@ class CustomDataLoader(OwnedIterator):
     
     @property
     def element_spec(self):
-        return (tf.TensorSpec(shape=(None, 2), dtype=tf.float32, name=None), tf.TensorSpec(shape=(None, 1), dtype=tf.float32, name=None))
+        return (tf.TensorSpec(shape=(None, 2), dtype=tf.float64, name=None), tf.TensorSpec(shape=(None, 1), dtype=tf.float64, name=None))
     
     def _type_spec(self):
         return IteratorSpec(self.element_spec)
@@ -92,7 +92,7 @@ class CustomDataLoader(OwnedIterator):
                 #     replace=False)
                 sample_X[i_idx:f_idx,:] = self.split_X[i][j][idxs]
                 sample_Y[i_idx:f_idx,:] = self.split_Y[i][j][idxs]
-        return tf.convert_to_tensor(sample_X, dtype=tf.float32), tf.convert_to_tensor(sample_Y, dtype=tf.float32) # tf.convert_to_tensor(sample_X, sample_Y) #tf.convert_to_tensor(sample_X), tf.convert_to_tensor(sample_Y)
+        return tf.convert_to_tensor(sample_X, dtype=tf.float64), tf.convert_to_tensor(sample_Y, dtype=tf.float64) # tf.convert_to_tensor(sample_X, sample_Y) #tf.convert_to_tensor(sample_X), tf.convert_to_tensor(sample_Y)
     
     def get_next(self):
         return next(self)
@@ -127,7 +127,7 @@ class TwoPieceNormalLikelihood(gpf.likelihoods.multilatent.MultiLatentTFPConditi
 class JohnsonSULikelihood(gpf.likelihoods.multilatent.MultiLatentTFPConditional):
     def __init__(self, **kwargs):
         distribution_class = tfp.distributions.JohnsonSU
-        low = tf.constant(1.0e-3, dtype=tf.float32)
+        low = tf.constant(1.0e-3, dtype=tf.float64)
         # self.skewness_transform = tfp.bijectors.Softplus(low=low)
         self.tailweight_transform = tfp.bijectors.Softplus(low=low)
         # self.loc_transform = tfp.bijectors.Softplus(low=low)

@@ -188,6 +188,7 @@
     <starFormationTimescale value="baugh2005">
       <timescale value="8.0"/>
       <exponentVelocity value="-3.0"/>
+      <velocityNormalization value="50.0"/>
       <exponentExpansionFactor value="0.0"/>
     </starFormationTimescale>
   </starFormationRateDisks>

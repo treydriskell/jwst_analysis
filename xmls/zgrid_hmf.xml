@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Default parameters for Galacticus v0.9.4 -->
+<!-- 30-October-2011                          -->
+<parameters>
+  <formatVersion>2</formatVersion>
+  <version>0.9.4</version>
+
+  <!-- Specify tasks to perform -->
+  <task value="multi">
+    <task value="haloMassFunction">
+      <haloMassMinimum value="1.00115355e+08"/>
+      <haloMassMaximum value="5.0e+11"/>
+      <pointsPerDecade value="1000"/>
+      <!-- <outputGroup value="/home/gdriskell/galacticus/z11.6_hmf.hdf5"/> -->
+    </task>
+    <!-- <task value="evolveForests"/> -->
+  </task>
+
+  <!-- Cosmological parameters and options -->
+  <cosmologyFunctions value="matterLambda"/>
+  <cosmologyParameters value="simple">
+    <HubbleConstant value="70.0" />
+    <OmegaMatter value=" 0.286" />
+    <OmegaDarkEnergy value=" 0.714" />
+    <OmegaBaryon value=" 0.047" />
+    <temperatureCMB value=" 2.72548" />
+  </cosmologyParameters>
+
+  <!-- Power spectrum options -->
+  <cosmologicalMassVariance value="filteredPower">
+    <sigma_8 value="0.82" />
+    <!-- Planck 2018; arXiv:1807.06211 -->
+  </cosmologicalMassVariance>
+
+  <transferFunction value="eisensteinHu1999">
+    <neutrinoNumberEffective value="3.046" />
+    <neutrinoMassSummed value="0.000" />
+  </transferFunction>
+  <powerSpectrumPrimordial value="powerLaw">
+    <index value="0.9665" />
+    <wavenumberReference value="1.0000" />
+    <running value="0.0000" />
+  </powerSpectrumPrimordial>
+  <powerSpectrumPrimordialTransferred value="simple" />
+
+  <!-- Structure formation options -->
+  <linearGrowth value="collisionlessMatter"/>
+  <haloMassFunction value="pressSchechter" />
+  <criticalOverdensity value="sphericalCollapseClsnlssMttrCsmlgclCnstnt"/>
+  <virialDensityContrast value="sphericalCollapseClsnlssMttrCsmlgclCnstnt"/>
+
+  <excursionSetBarrier value="remapScale">
+    <factor value="1.1965" />
+    <applyTo value="nonRates" /> 
+    <excursionSetBarrier value="remapShethMoTormen">
+      <a value="0.707" />
+      <b value="0.500" />
+      <c value="0.600" />
+      <applyTo value="nonRates" />
+      <excursionSetBarrier value="criticalOverdensity" />
+    </excursionSetBarrier>
+  </excursionSetBarrier>
+
+  <!-- Dark matter halo structure options -->
+  <darkMatterProfileDMO value="heated">
+    <darkMatterProfileDMO value="NFW" />
+    <nonAnalyticSolver value="numerical" />
+    <velocityDispersionApproximate value="false" />
+    <toleranceRelativeVelocityDispersion value="1.0e-5" />
+  </darkMatterProfileDMO>
+  <darkMatterProfileConcentration value="diemerJoyce2019">
+    <scatter value="0.16" />
+  </darkMatterProfileConcentration>
+
+
+  <nodePropertyExtractor value="multi">
+    <nodePropertyExtractor value="treeWeight" />
+    <nodePropertyExtractor value="time" />
+    <nodePropertyExtractor value="redshift" />
+  </nodePropertyExtractor>
+
+  <!-- Output options -->
+  <outputFileName value="/home/gdriskell/galacticus/data/gpr_zgrid_hmfs.hdf5"/>
+  <outputTimes value="uniformSpacingInRedshift">
+    <redshiftMinimum value="8.0"/>
+    <redshiftMaximum value="16.0"/>
+    <countRedshifts value="17"/>
+  </outputTimes>
+  <!-- <outputTimes value="list">
+    <redshifts value="8.0 12.0 16.0"/>
+  </outputTimes> -->
+
+</parameters>

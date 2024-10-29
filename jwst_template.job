@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --time=02:00:00 
+#SBATCH --partition=main
+#SBATCH --job-name=template
+#SBATCH --output=/scratch1/gdriskel/jwst_data/jobs/template.out
+#SBATCH --error=/scratch1/gdriskel/jwst_data/jobs/template.err
+#SBATCH --exclusive
+
+module purge
+module load gcc
+
+cd /home1/gdriskel/ # cd to directory with scripts

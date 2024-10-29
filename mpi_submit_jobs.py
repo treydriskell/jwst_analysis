@@ -62,8 +62,8 @@ def create_jobs_from_list(astro_params, xml_fns, initial,final):
     with open(template_job, 'r') as f:
         lines = f.readlines()
     lines[6] = '#SBATCH --job-name=' + fn_base + '\n'
-    lines[7] = '#SBATCH --output=/scratch1/gdriskel/jwst_data/jobs/' + fn_base + '.out\n'
-    lines[8] = '#SBATCH --error=/scratch1/gdriskel/jwst_data/jobs/' + fn_base + '.err\n'
+    lines[7] = '#SBATCH --output=/project/gluscevi_339/jwst_data/jobs/' + fn_base + '.out\n'
+    lines[8] = '#SBATCH --error=/project/gluscevi_339/jwst_data/jobs/' + fn_base + '.err\n'
     for xml_fn in xml_fns:
         #lines.append('mpirun --n 16 --map-by node --bind-to none -mca btl ^openib /home/gdriskell/galacticus/Galacticus.exe ' + xml_fn + '\n')
         # mpirun --n ??? --map-by node --bind-to none -mca btl ^openib
@@ -74,7 +74,7 @@ def create_jobs_from_list(astro_params, xml_fns, initial,final):
     lines.append('echo "job ended at `date`" \n')
     lines.append('exit\n')
     # job_fn = path.join(astro_params['job_dir'], fn_base + '.sbatch')
-    job_fn = path.join('/scratch1/gdriskel/jwst_data/jobs/', fn_base + '.job')
+    job_fn = path.join('/project/gluscevi_339/jwst_data/jobs/', fn_base + '.job')
     # print(job_fn)
     with open(job_fn, 'w') as f:
         # print(type(f),type(lines)) 
@@ -125,7 +125,7 @@ for yaml_fn in yaml_fns:#'yamls/nr12_params.yaml' # 'yamls/maxlike_corners.yaml'
         # print(j)
         fn_base = astro_params['param_dir']+'_p{}'.format(j)
         # outdir = path.join(astro_params['base_dir'], fn_base)
-        outdir = path.join('/scratch1/gdriskel/jwst_data/', fn_base)
+        outdir = path.join('/project/gluscevi_339/jwst_data/', fn_base)
 
         if not path.isdir(outdir):
             os.makedirs(outdir)
@@ -140,7 +140,7 @@ for yaml_fn in yaml_fns:#'yamls/nr12_params.yaml' # 'yamls/maxlike_corners.yaml'
             xml_fns.append(xml_fn)
         if (j%params_per_job) == (params_per_job-1):
             # os.chdir(astro_params['job_dir'])
-            os.chdir('/scratch1/gdriskel/jwst_data/jobs/')
+            os.chdir('/project/gluscevi_339/jwst_data/jobs/')
             job_fn = create_jobs_from_list(astro_params, xml_fns,ji,j)
             # if len(jobids)<4:
             print(job_fn)
@@ -163,7 +163,7 @@ for yaml_fn in yaml_fns:#'yamls/nr12_params.yaml' # 'yamls/maxlike_corners.yaml'
     if len(xml_fns)>1:
         # print('bad')
         # os.chdir(astro_params['job_dir'])
-        os.chdir('/scratch1/gdriskel/jwst_data/jobs/')
+        os.chdir('/project/gluscevi_339/jwst_data/jobs/')
         job_fn = create_jobs_from_list(astro_params, xml_fns,i-(i%params_per_job),i)
         os.system('sbatch ' + job_fn)
         # dep_string ='depend=afterok:' + jobids.pop(0)

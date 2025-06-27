@@ -2,25 +2,22 @@
 
 base_dir: "/data001/gdriskell/jwst_blitz_astro_samples/"
 param_dir: "smf_params"
-xml_template: "/home/gdriskell/galacticus/parameters/jwst-galaxies/z0.35_template.xml"
+xml_template: "/home/gdriskell/jwst_analysis/xmls/smf_template.xml"
 job_template: "/data001/gdriskell/jwst_blitz_astro_samples/jobs/simple_template.pbs"
 job_dir: "/data001/gdriskell/jwst_blitz_astro_samples/jobs"
 
-zs: ['8.0', '7.0', '6.0', '5.0', '4.0', '3.0', '2.0', '1.0', '0.7', '0.1']
-
-# fixed_parameters:
-#   mergerTreeNodeEvolver/odeToleranceAbsolute:
+zs: ['11.94','10.40', '8.86', '8.0', '7.0', '6.0', '5.0', '4.0', '3.0', '2.0', '1.0', '0.7', '0.1']
 
 parameters:
   velocityOutflow: # default is 250.0
     path: 'nodeOperator/nodeOperator/stellarFeedbackOutflows/stellarFeedbackOutflows/velocityCharacteristic'
     sample: false
-    value: 150.0
+    value: 130.0
 
   alphaOutflow: # default is 3.5
     path: 'nodeOperator/nodeOperator/stellarFeedbackOutflows/stellarFeedbackOutflows/exponent'
     sample: false
-    value: 1.5
+    value: 1.75
 
   timescale: # default is 8.0
     path: 'starFormationRateDisks/starFormationTimescale/timescale'
@@ -31,4 +28,3 @@ parameters:
     path: 'starFormationRateDisks/starFormationTimescale/exponentVelocity'
     sample: false
     value: -1.5
-

@@ -14,6 +14,7 @@ import itertools
 import pandas as pd
 # import cmasher as cmr
 import seaborn as sns
+import analysis
 
 rng = np.random.default_rng()
 
@@ -75,60 +76,38 @@ def binned_uvlf(weights, Muvs):
     return x, uvlf
 
 
-def compute_uvlf(weights, probs, data_dir, output_tag, recompute=False, abs_mag=False):
-    # Output shape is muv x z
-    if abs_mag:
-        uvlf_fn = path.join(data_dir, output_tag + '_uvlf_abs.npy')
-    else:
-        uvlf_fn = path.join(data_dir, output_tag + '_uvlf.npy')
-    if path.isfile(uvlf_fn) and not recompute:
-        phi = np.load(uvlf_fn)
-    # else:
-        # raise Exception()
-        # npad = weights.shape[-1]-probs.shape[-1]
-        # probs = np.pad(probs, [[0,0],[0,0],[npad,0]])
-        # # probs = probs.T
-        # # probs = (probs / np.sum(probs, axis=0))
-        # # probs = probs.T
-        # probs = (probs / np.sum(probs, axis=0))
-        # probs = np.where(np.isnan(probs), 0.0, probs)
-        # phi = np.sum(weights * probs, axis=2)
-        # np.save(uvlf_fn, phi)
-    return phi
-
-
-def plot_uvlf(axs, muv_grid, z_grid, uvlf, data_dir, abs=False):
+def plot_uvlf(axs, muv_grid, uvlf, data_dir, abs=False):
     c = 'k' #s_m.to_rgba(i)
     # c = plt.cm.Dark2(3)
     # zs = [8.0, 12.0, 16.0]
     # for i,z in enumerate(zs):
     ax = axs[0]
-    zidx = (z_grid > 8.5) & (z_grid < 9.5)
+    zidx = (analysis.redshift_grid > 8.5) & (analysis.redshift_grid < 9.5)
     # if abs:
-    #     abs_grid = muv_grid
+    #     analysis.absolute_magnitude_grid = muv_grid
     # else:
-    #     abs_grid = muv_grid - cosmo.distmod(9.0).value+2.5*np.log10(1+9.0)
-    #     dm = (abs_grid[2:]-abs_grid[:-2])/2.0
+    #     analysis.absolute_magnitude_grid = muv_grid - cosmo.distmod(9.0).value+2.5*np.log10(1+9.0)
+    #     dm = (analysis.absolute_magnitude_grid[2:]-analysis.absolute_magnitude_grid[:-2])/2.0
     # print(np.sum(zidx))
     y = np.average(uvlf[:, zidx],axis=1) 
     # y = uvlf[:, zidx][:,-1]
     # print(np.amin(y), np.amax(y))
     midx = y>0
     y = np.log10(y[midx]) # /dm[midx]
-    ax.plot(abs_grid[midx], y, lw=2.0, c=c, label='Best fit') # label='Sim.',
+    ax.plot(analysis.absolute_magnitude_grid[midx], y, lw=2.0, c=c, label='Best fit') # label='Sim.',
     ax = axs[1]
-    zidx = (z_grid > 9.5) & (z_grid < 12.0)
+    zidx = (analysis.redshift_grid > 9.5) & (analysis.redshift_grid < 12.0)
     # if abs:
-    #     abs_grid = muv_grid
-    #     dm = abs_grid[1]-abs_grid[0]
+    #     analysis.absolute_magnitude_grid = muv_grid
+    #     dm = analysis.absolute_magnitude_grid[1]-analysis.absolute_magnitude_grid[0]
     # else:
-    #     abs_grid = muv_grid - cosmo.distmod(10.5).value+2.5*np.log10(1+10.5)
-    #     # dm = np.array([abs_grid[1]-abs_grid[0], abs_grid[1:]-abs_grid[:-1], abs_grid[-1]-abs_grid[-2]])
-    #     dm = ((abs_grid[1:-1]-abs_grid[:-2]) + (abs_grid[2:]-abs_grid[1:-1]))/2.0
+    #     analysis.absolute_magnitude_grid = muv_grid - cosmo.distmod(10.5).value+2.5*np.log10(1+10.5)
+    #     # dm = np.array([analysis.absolute_magnitude_grid[1]-analysis.absolute_magnitude_grid[0], analysis.absolute_magnitude_grid[1:]-analysis.absolute_magnitude_grid[:-1], analysis.absolute_magnitude_grid[-1]-analysis.absolute_magnitude_grid[-2]])
+    #     dm = ((analysis.absolute_magnitude_grid[1:-1]-analysis.absolute_magnitude_grid[:-2]) + (analysis.absolute_magnitude_grid[2:]-analysis.absolute_magnitude_grid[1:-1]))/2.0
     y = np.average(uvlf[:, zidx],axis=1)#[1:-1]
     midx = y>0
     y = np.log10(y[midx]) # /dm[midx]
-    ax.plot(abs_grid[midx], y, lw=2.0, c=c, label='Best fit') #  label='Sim.',
+    ax.plot(analysis.absolute_magnitude_grid[midx], y, lw=2.0, c=c, label='Best fit') #  label='Sim.',
     
 
 def plot_data(ax):
@@ -227,66 +206,70 @@ def load_data(data_dir):
 
 app_cutoff = 30.4
 
-# global z_grid
-# global s 
-dMh = 0.1
-Mh_bins = np.arange(8.0, 11.76, dMh)
-global nm
-nm = len(Mh_bins)-1
-bin_centers = Mh_bins[:-1] + dMh/2.0 
+# # global analysis.redshift_grid
+# # global s 
+# dMh = 0.1
+# Mh_bins = np.arange(8.0, 11.76, dMh)
+# global nm
+# nm = len(Mh_bins)-1
+# bin_centers = Mh_bins[:-1] + dMh/2.0 
 
-global nz
-nz = 17
-global z_grid
-z_grid = np.linspace(8.0, 16.0, nz)
-dz = z_grid[1]-z_grid[0]
+# global nz
+# nz = 17
+# global analysis.redshift_grid
+# analysis.redshift_grid = np.linspace(8.0, 16.0, nz)
+# dz = analysis.redshift_grid[1]-analysis.redshift_grid[0]
 
-z_left = z_grid-dz/2.0
-z_right = z_grid+dz/2.0
 
-logmhs = np.log10(np.geomspace(1.0e8,5.0e11,3699))
+
+# logmhs = np.log10(np.geomspace(1.0e8,5.0e11,3699))
 # global binned_weights
 # binned_weights = get_binned_weights(Mh_bins,logmhs,zgrid_weights)
 # print(binned_weights)
 
-abs_min = -25.0
-abs_max = 0.
-dabs = 0.2
-nabs = int(round((abs_max-abs_min)/dabs))+1
-abs_grid = np.linspace(abs_min, abs_max, nabs) 
-dabs = abs_grid[1]-abs_grid[0]
+# abs_min = -25.0
+# abs_max = 0.
+# dabs = 0.2
+# nabs = int(round((abs_max-abs_min)/dabs))+1
+# analysis.absolute_magnitude_grid = np.linspace(abs_min, abs_max, nabs) 
+# dabs = analysis.absolute_magnitude_grid[1]-analysis.absolute_magnitude_grid[0]
 
-app_min = 22.0
-app_max = 45.0
-dapp = 0.2
-napp = int(round((app_max-app_min)/dapp))+1
-app_grid = np.linspace(app_min, app_max, napp) 
-dapp = app_grid[1]-app_grid[0]
+# app_min = 22.0
+# app_max = 45.0
+# dapp = 0.2
+# napp = int(round((app_max-app_min)/dapp))+1
+# app_grid = np.linspace(app_min, app_max, napp) 
+# dapp = app_grid[1]-app_grid[0]
 
 
-z_volumes = (cosmo.comoving_volume(z_grid+dz/2.0)-cosmo.comoving_volume(z_grid-dz/2.0)).value 
+# z_volumes = (cosmo.comoving_volume(analysis.redshift_grid+dz/2.0)-cosmo.comoving_volume(analysis.redshift_grid-dz/2.0)).value 
 
-output_tag = 'interp'
+# output_tag = 'interp'
 
 plot_data(plt.gca())
 
 
-base_dir = '/data001/gdriskell/jwst_blitz_astro_samples/'
-df = pd.read_csv('final_df.csv')
+base_dir = '/carnegie/nobackup/users/gdriskell/jwst_data/'
+df = pd.read_csv('paper_params.csv')
+df = df.sort_values('loglike', ascending=False)
+df.insert(len(df.columns), 'like', np.exp(df['loglike']))
 
 
-bffn = base_dir+f'nr4_p60/'
+z_left = analysis.redshift_grid-analysis.dz/2.0
+z_right = analysis.redshift_grid+analysis.dz/2.0
+
+bffn = base_dir+f'paper_params_p13845/'
 # print(fn)
-uvlf = compute_uvlf(None, None, bffn, output_tag, False, True)/dabs
-zidx = z_grid == 8.0
-zs = z_grid[zidx]
+uvlf = analysis.get_uvlf(None,None,bffn,True,False)/analysis.dabs
+zidx = analysis.redshift_grid == 8.0
+zs = analysis.redshift_grid[zidx]
 z_left_slice = z_left[zidx]
 z_right_slice = z_right[zidx]
 zuvlf = uvlf[:,zidx]
-zvolume = z_volumes[zidx]
-totalV = np.zeros_like(abs_grid)
-y = np.zeros_like(abs_grid)
-for j,muv in enumerate(abs_grid):
+zvolume = analysis.z_volumes[zidx]
+totalV = np.zeros_like(analysis.absolute_magnitude_grid)
+y = np.zeros_like(analysis.absolute_magnitude_grid)
+for j,muv in enumerate(analysis.absolute_magnitude_grid):
     for k in range(len(zs)):
         # left > right
         # left_cutoff = app_cutoff - cosmo.distmod(z_left_slice[j]).value + 2.5*np.log10(1+z_left_slice[j])
@@ -298,7 +281,7 @@ for j,muv in enumerate(abs_grid):
         #     volume = 
 y /= totalV
 bestfit_z8 = y
-plt.plot(abs_grid, np.log10(y), '-k', label='Best fit')
+plt.plot(analysis.absolute_magnitude_grid, np.log10(y), '-k', label='Best fit')
 
 
 n_sample = 5000
@@ -306,27 +289,27 @@ n_sample = 5000
 colors = sns.color_palette("Blues",n_colors=2) 
 
 # for i, n in enumerate(n_samples):
-z8_upper = np.zeros_like(abs_grid)
-z8_lower = np.ones_like(abs_grid)
+z8_upper = np.zeros_like(analysis.absolute_magnitude_grid)
+z8_lower = np.ones_like(analysis.absolute_magnitude_grid)
 
 # c = colors[-(i+1)]
 # c = colors[-(i+1)]
 samples = df.sample(n_sample, replace=True, weights='like')
 z8_ys = []
 for index,row in samples.iterrows():
-    fn = base_dir+f'{row["tag"]}_p{row["idx"]}/'
+    fn = base_dir+f'paper_params_p{index}/'
     if fn != bffn:
         # print(fn)
-        uvlf = compute_uvlf(None, None, fn, output_tag, False, True)/dabs
-        zidx = (z_grid == 8.0) 
-        zs = z_grid[zidx]
+        uvlf = analysis.get_uvlf(None,None,fn,True,False)/analysis.dabs
+        zidx = (analysis.redshift_grid == 8.0) 
+        zs = analysis.redshift_grid[zidx]
         z_left_slice = z_left[zidx]
         z_right_slice = z_right[zidx]
         zuvlf = uvlf[:,zidx]
-        zvolume = z_volumes[zidx]
-        totalV = np.zeros_like(abs_grid)
-        y = np.zeros_like(abs_grid)
-        for j,muv in enumerate(abs_grid):
+        zvolume =analysis.z_volumes[zidx]
+        totalV = np.zeros_like(analysis.absolute_magnitude_grid)
+        y = np.zeros_like(analysis.absolute_magnitude_grid)
+        for j,muv in enumerate(analysis.absolute_magnitude_grid):
             for k in range(len(zs)):
                 # left > right
                 # left_cutoff = app_cutoff - cosmo.distmod(z_left_slice[j]).value + 2.5*np.log10(1+z_left_slice[j])
@@ -347,11 +330,11 @@ z8_ys = np.array(z8_ys)
 z8_diff = np.abs(z8_ys-bestfit_z8) 
 
 for i,frac in enumerate([0.68, 0.95]):
-    z8_lower = np.zeros_like(abs_grid)
-    z8_upper = np.zeros_like(abs_grid)
+    z8_lower = np.zeros_like(analysis.absolute_magnitude_grid)
+    z8_upper = np.zeros_like(analysis.absolute_magnitude_grid)
     c = colors[-(i+1)]
     n_cut = int(round(frac*n_sample))
-    for im, m in enumerate(abs_grid):
+    for im, m in enumerate(analysis.absolute_magnitude_grid):
         z8_idx = np.argsort(z8_diff[:,im])
         z8_diff_m = z8_diff[z8_idx,im]
         z8_ys_m = z8_ys[z8_idx,im]
@@ -365,7 +348,7 @@ for i,frac in enumerate([0.68, 0.95]):
     z8_lower = np.log10(z8_lower[idx])
     # ax = axs[0]
     # print(idx.shape)
-    plt.fill_between(abs_grid[idx], z8_lower, z8_upper, color=c, alpha=0.9-i*0.2, zorder=-i, 
+    plt.fill_between(analysis.absolute_magnitude_grid[idx], z8_lower, z8_upper, color=c, alpha=0.9-i*0.2, zorder=-i, 
                     label=f'${int(round(frac*100))}'+r'\% $ CI')
 
 

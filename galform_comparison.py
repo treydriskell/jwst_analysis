@@ -130,7 +130,8 @@ def load_data(data_dir, z, reload=False):
 #             '/data001/gdriskell/jwst_blitz_astro_samples/nr4_p60/']    
 
 
-fn = '/data001/gdriskell/jwst_blitz_astro_samples/nr4_p60/'
+# fn = '/data001/gdriskell/jwst_blitz_astro_samples/nr4_p60/'
+fn = '/carnegie/nobackup/users/gdriskell/jwst_data/paper_params_p13845/'
 plot_zs = ['8.0', '12.0', '16.0']
 
 f, axs = plt.subplots(1,2, figsize=(12,5), constrained_layout=True) 

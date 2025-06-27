@@ -101,12 +101,12 @@
     </mergerTreeBuildMassDistribution>
     <massTreeMinimum value="1.0e8" />
     <massTreeMaximum value="5.0e11" />
-    <treesPerDecade value="1000" />
+    <treesPerDecade value="250" />
   </mergerTreeBuildMasses>
 
   <mergerTreeMassResolution value="scaled">
     <massResolutionMinimum value="1.0e6" />
-    <massResolutionFractional value="5.0e-3" />
+    <massResolutionFractional value="1.0e-2" />
   </mergerTreeMassResolution>
   
   <mergerTreeNodeMerger value="singleLevelHierarchy" />
@@ -174,7 +174,9 @@
   </coolingTimeAvailable>
   <starveSatellites value="false" />
 
-  <hotHaloRamPressureStripping value="font2008" />
+  <hotHaloRamPressureStripping value="font2008">
+    <solverFailureIsFatal value="false"/>
+  </hotHaloRamPressureStripping>
   <hotHaloRamPressureForce value="font2008" />
   <hotHaloRamPressureTimescale value="ramPressureAcceleration" />
   <hotHaloOutflowStrippingEfficiency value="0.1" />

@@ -111,6 +111,43 @@ def load_data(data_dir, z, reload=False):
 #             * (term1 + term2))
 
 
+def add_jwst_data(ax, z, c):
+    if z==8.:
+        z8_mstar = [8.125, 8.875, 9.625]
+        z8_phi = np.array([16.06e-4, 1.64e-4, 0.17e-4])
+        z8_phi_upper = np.array([3.68e-4, 0.6e-4, 0.17e-4])
+        z8_phi_lower = np.array([3.48e-4, 0.45e-4, 0.08e-4])
+        lower = np.log10(z8_phi) - np.log10(z8_phi-z8_phi_lower)
+        upper = np.log10(z8_phi+z8_phi_upper) - np.log10(z8_phi)
+
+        ax.scatter(z8_mstar, np.log10(z8_phi), marker='o', s=20, facecolor=c, edgecolor=c, zorder=998)
+        ax.errorbar(z8_mstar, np.log10(z8_phi), yerr=[lower,upper], marker='o', color="none", ls="none", ecolor=c, zorder=998, capsize=3.5)
+
+
+    # z9_mstar = [8.125, 8.875, 9.625]
+    # z9_phi = [8.16e-4, 0.5e-4, 0.05e-4]
+    # z9_phi_upper = [2.3e-4, 0.35e-4, 0.10e-4]
+    # z9_phi_lower = [2.13e-4, 0.2e-4, 0.05e-4]
+
+    if z=='10.40':
+        z10_mstar = [8.125, 8.875, 9.625]
+        z10_phi = np.array([4.53e-4, 0.64e-4, 0.03e-4])
+        z10_phi_upper = np.array([1.12e-4, 0.25e-4, 0.10e-4])
+        z10_phi_lower = np.array([1.00e-4, 0.19e-4, 0.02e-4])
+
+        lower = np.log10(z10_phi) - np.log10(z10_phi-z10_phi_lower)
+        upper = np.log10(z10_phi+z10_phi_upper) - np.log10(z10_phi)
+
+        ax.scatter(z10_mstar, np.log10(z10_phi),marker='o', s=20, facecolor=c, edgecolor=c, zorder=998)
+        ax.errorbar(z10_mstar, np.log10(z10_phi), yerr=[lower,upper], marker='o', color="none", ls="none", ecolor=c, zorder=998, capsize=3.5)
+
+    # z12_mstar = [8.125, 8.875]
+    # z12_phi = [2.13e-4, 0.22e-4]
+    # z12_phi_upper = [0.99e-4, 0.22e-4]
+    # z12_phi_lower = [0.90e-4, 0.12e-4]
+
+
+
 def get_um_smf(z):
     
     print(z)
@@ -121,7 +158,7 @@ def get_um_smf(z):
         z_close = um_zs[z_idx]
         idx = um_data['z'] == z_close
         #return None, None, None, None
-    print(um_data[idx])
+    # print(um_data[idx])
     
     log_sm = um_data['sm'][idx].to_numpy()
     logphi = um_data['Val'][idx].to_numpy()
@@ -154,14 +191,14 @@ def get_um_smf(z):
 #     um_zs[i] = z
 # print(um_zs.max(),um_zs.min())
 
-um_fn = 'umachine-dr1/data/obs.txt'
+um_fn = '~/umachine-dr1/data/obs.txt'
 um_data = pd.read_csv(um_fn, sep='\s+', header=1) #, skiprows=1
 um_data['z'] = (um_data['Z2'] + um_data['Z1'])/2.0
 um_data['sm'] = (um_data['SM2'] + um_data['SM1'])/2.0
 idx = (um_data['#Type'] == 'smf') & (um_data['Subtype'] == 'a')
 um_data = um_data[idx]
 um_zs = pd.unique(um_data['z'])
-print(pd.unique(um_data['Z1']),pd.unique(um_data['Z2']))
+# print(pd.unique(um_data['Z1']),pd.unique(um_data['Z2']))
 # print(um_zs)
 # print()
 # print(um_data.head())
@@ -170,13 +207,13 @@ print(pd.unique(um_data['Z1']),pd.unique(um_data['Z2']))
 
 # schechter_function = 
 
-base_fn = '/data001/gdriskell/jwst_blitz_astro_samples/smf_params_p0/'
+base_fn = '/carnegie/nobackup/users/gdriskell/jwst_data/smf_params_p0/'
 
 
 # print
 # plot_zs = ['0.1', '8.0', '12.0']
 # plot_zs = ['0.35']
-plot_zs = [0.1,0.7,1.0,2.,3.,4.,5.,6.,7.,8.] # [0.1,0.7,1.0,2.,3.,4.,5.,6.,7.,8.]
+plot_zs = [0.1,0.7,1.0,2.,3.,4.,5.,6.,7.,8.]#, 8.86, '10.40', 11.94] # [0.1,0.7,1.0,2.,3.,4.,5.,6.,7.,8.]
 nz = len(plot_zs)
 f, ax = plt.subplots(1,1, figsize=(6,5), constrained_layout=True) 
 
@@ -189,11 +226,12 @@ for i in range(1,nz,2):
     #     ax = axs
     # else:
     #     ax = axs[i]
-    c = plt.cm.tab10(i)
+    c = plt.cm.tab10(i//2)
 
     # data_dir = '/data001/gdriskell/jwst_blitz_astro_samples/z0_params_p0/'
     logmhs, zs, stellar_masses, weights = load_data(base_fn, z)
     log_sm = np.log10(stellar_masses)
+    # print(np.amax(log_sm))
     # print(stellar_masses)
     # print(logmhs.shape, stellar_masses.shape)
 
@@ -244,11 +282,16 @@ for i in range(1,nz,2):
     #                 label=f'Cosmos2020 $68\%$ CI')
     # ax.plot(bin_centers, np.log10(cosmos2020_sf_bf), c=c, label='COSMOS')
     # ax.plot(bin_centers, phi, c='k', label='This work')
-    log_sm, phi, upper, lower = get_um_smf(z)    
-    # ax.plot(log_sm,phi,c=c)
-    ax.scatter(log_sm, phi, marker='o', s=20, facecolor=c, edgecolor=c, zorder=998)
-    ax.errorbar(log_sm, phi, yerr=[lower,upper], marker='o', color="none", ls="none", ecolor=c, zorder=998, capsize=3.5)
-    ax.plot([],[],c=c, label=f'$z={z:.1f}$')
+    if float(z) < 8.0:
+        log_sm, phi, upper, lower = get_um_smf(z)    
+        ax.scatter(log_sm, phi, marker='o', s=20, facecolor=c, edgecolor=c, zorder=998)
+        ax.errorbar(log_sm, phi, yerr=[lower,upper], marker='o', color="none", ls="none", ecolor=c, zorder=998, capsize=3.5)
+    else:
+        add_jwst_data(ax, z, c)
+    if type(z)==float:
+        ax.plot([],[],c=c, label=f'$z={z:.1f}$')
+    else:
+        ax.plot([],[],c=c, label=f'$z={z}$')
 
     # ax.plot(um_data[:,0], um_data[:,2], c='tab:orange', label='Median UniverseMachine')
 

@@ -706,61 +706,61 @@ plt.savefig(f'sampled_uvlf_CI.pdf')
 plt.close('all')
 
 
-f, axs = plt.subplots(1, 2, figsize=(12,5),constrained_layout=True, sharey=True)
+# f, axs = plt.subplots(1, 2, figsize=(12,5),constrained_layout=True, sharey=True)
 
-axs[0].plot(oneSigmaScatter[0][0], oneSigmaScatter[0][1], 'k-', label='One Sigma')
-axs[0].plot(twoSigmaScatter[0][0], twoSigmaScatter[0][1], 'k--', label='Two Sigma')
+# axs[0].plot(oneSigmaScatter[0][0], oneSigmaScatter[0][1], 'k-', label='One Sigma')
+# axs[0].plot(twoSigmaScatter[0][0], twoSigmaScatter[0][1], 'k--', label='Two Sigma')
 
-axs[1].plot(oneSigmaScatter[1][0], oneSigmaScatter[1][1], 'k-', label='One Sigma')
-axs[1].plot(twoSigmaScatter[1][0], twoSigmaScatter[1][1], 'k--', label='Two Sigma')
-axs[0].set_title(r'$8.5<z<9.5$')
-axs[1].set_title(r'$9.5<z<12.0$')
-axs[0].set_xlim(-22.75, -17.1)
-axs[1].set_xlim(-22.75, -17.1)
-axs[0].set_ylim(0, 1)
-axs[0].set_ylabel('Log UVLF Scatter (dex)')
-axs[0].legend(frameon=False, fontsize=12.5)
-axs[1].legend(frameon=False, fontsize=12.5)
-axs[0].set_xlabel(r'$M_{\mathrm{UV}}$')
-axs[1].set_xlabel(r'$M_{\mathrm{UV}}$')
-plt.savefig(f'uvlf_scatter.pdf')
-plt.close('all')
-
-plot_muvs = [-22, -21, -20, -19, -18]
-f, axs = plt.subplots(1, 2, figsize=(12,5),constrained_layout=True, sharey=True)
-
-slopes = []
-for muv in plot_muvs:
-    left = muv - 0.5
-    right = muv + 0.5
-    leftidx = np.argmin(np.abs(abs_grid-left))
-    rightidx = np.argmin(np.abs(abs_grid-right))
-    y = np.log10(bestfit_z9)
-    slope = y[rightidx] - y[leftidx]
-    slopes.append(slope)
-
-axs[0].plot(plot_muvs, slopes, 'k-',)
-
-slopes = []
-for muv in plot_muvs:
-    left = muv - 0.5
-    right = muv + 0.5
-    leftidx = np.argmin(np.abs(abs_grid-left))
-    rightidx = np.argmin(np.abs(abs_grid-right))
-    y = np.log10(bestfit_z11)
-    slope = y[rightidx] - y[leftidx]
-    slopes.append(slope)
-
-axs[1].plot(plot_muvs, slopes, 'k-',)
-axs[0].set_title(r'$8.5<z<9.5$')
-axs[1].set_title(r'$9.5<z<12.0$')
-axs[0].set_xlim(-22.5, -17.5)
-axs[1].set_xlim(-22.5, -17.5)
+# axs[1].plot(oneSigmaScatter[1][0], oneSigmaScatter[1][1], 'k-', label='One Sigma')
+# axs[1].plot(twoSigmaScatter[1][0], twoSigmaScatter[1][1], 'k--', label='Two Sigma')
+# axs[0].set_title(r'$8.5<z<9.5$')
+# axs[1].set_title(r'$9.5<z<12.0$')
+# axs[0].set_xlim(-22.75, -17.1)
+# axs[1].set_xlim(-22.75, -17.1)
 # axs[0].set_ylim(0, 1)
-axs[0].set_ylabel(r'UVLF Slope $\frac{\mathrm{dLog}\phi_{\mathrm{UV}}}{\mathrm{d}M_{\mathrm{UV}}}$')
-axs[0].set_xlabel(r'$M_{\mathrm{UV}}$')
-axs[1].set_xlabel(r'$M_{\mathrm{UV}}$')
+# axs[0].set_ylabel('Log UVLF Scatter (dex)')
 # axs[0].legend(frameon=False, fontsize=12.5)
 # axs[1].legend(frameon=False, fontsize=12.5)
-plt.savefig(f'uvlf_slope.pdf')
-plt.close('all')
+# axs[0].set_xlabel(r'$M_{\mathrm{UV}}$')
+# axs[1].set_xlabel(r'$M_{\mathrm{UV}}$')
+# plt.savefig(f'uvlf_scatter.pdf')
+# plt.close('all')
+
+# plot_muvs = [-22, -21, -20, -19, -18]
+# f, axs = plt.subplots(1, 2, figsize=(12,5),constrained_layout=True, sharey=True)
+
+# slopes = []
+# for muv in plot_muvs:
+#     left = muv - 0.5
+#     right = muv + 0.5
+#     leftidx = np.argmin(np.abs(abs_grid-left))
+#     rightidx = np.argmin(np.abs(abs_grid-right))
+#     y = np.log10(bestfit_z9)
+#     slope = y[rightidx] - y[leftidx]
+#     slopes.append(slope)
+
+# axs[0].plot(plot_muvs, slopes, 'k-',)
+
+# slopes = []
+# for muv in plot_muvs:
+#     left = muv - 0.5
+#     right = muv + 0.5
+#     leftidx = np.argmin(np.abs(abs_grid-left))
+#     rightidx = np.argmin(np.abs(abs_grid-right))
+#     y = np.log10(bestfit_z11)
+#     slope = y[rightidx] - y[leftidx]
+#     slopes.append(slope)
+
+# axs[1].plot(plot_muvs, slopes, 'k-',)
+# axs[0].set_title(r'$8.5<z<9.5$')
+# axs[1].set_title(r'$9.5<z<12.0$')
+# axs[0].set_xlim(-22.5, -17.5)
+# axs[1].set_xlim(-22.5, -17.5)
+# # axs[0].set_ylim(0, 1)
+# axs[0].set_ylabel(r'UVLF Slope $\frac{\mathrm{dLog}\phi_{\mathrm{UV}}}{\mathrm{d}M_{\mathrm{UV}}}$')
+# axs[0].set_xlabel(r'$M_{\mathrm{UV}}$')
+# axs[1].set_xlabel(r'$M_{\mathrm{UV}}$')
+# # axs[0].legend(frameon=False, fontsize=12.5)
+# # axs[1].legend(frameon=False, fontsize=12.5)
+# plt.savefig(f'uvlf_slope.pdf')
+# plt.close('all')

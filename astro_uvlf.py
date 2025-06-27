@@ -12,6 +12,7 @@ import yaml
 import pandas as pd
 import xml.etree.ElementTree as ET
 import cmasher as cmr
+import analysis
 # from scipy.stats import chi2
 
 mpl.rcParams['text.usetex'] = False
@@ -32,10 +33,10 @@ mpl.rcParams['mathtext.fontset'] = 'cm'
 def parameters_to_labels(parameters):
     labels = []
     # for p in parameters:
-    if p == 'velocityOutflow':
+    if p == 'outflow_velocity':
         # tex = r'$\mathrm{Log}(V_{\mathrm{outflow}})$'
         tex = r'$\left(V_{\mathrm{outflow}}\right)$'
-    elif p == 'alphaOutflow':
+    elif p == 'outflow_alpha':
         # tex = r'$\mathrm{Log}(\alpha_{\mathrm{outflow}})$'
         tex = r'$\left(\alpha_{\mathrm{outflow}}\right)$'
     elif p == 'starFormationFrequencyNormalization':
@@ -46,9 +47,9 @@ def parameters_to_labels(parameters):
         tex = r'$\alpha_{\mathrm{HI}}$'
     elif p == 'efficiency':
         tex = r'$\epsilon_{\star}$'
-    elif p == 'timescale':
+    elif p == 'sfr_timescale':
         tex = r'$\left(\tau_{0}\right)$'
-    elif p == 'alphaStar':
+    elif p == 'sfr_alpha':
         tex = r'$\left(\alpha_{\star}\right)$'
     else:
         raise Exception('Unknown Astro Parameter')
@@ -56,24 +57,24 @@ def parameters_to_labels(parameters):
 
 def title_labels(p):
     # tex = tex_labels(p)
-    if p=='alphaOutflow':
+    if p=='outflow_alpha':
         label = r'$\mathrm{Feedback\, Exponent}\, \alpha_{\mathrm{outflow}}$'
-    if p=='alphaStar':
+    if p=='sfr_alpha':
         label = r'$\mathrm{SFE\,Exponent}\, \alpha_{\mathrm{\star}}$'
-    if p=='timescale':
+    if p=='sfr_timescale':
         label = r'$\mathrm{SFE\,Norm.}\,\tau_{0}$'
-    if p=='velocityOutflow':
+    if p=='outflow_velocity':
         label = r'$\mathrm{Feedback\,Norm.}\,V_{\mathrm{outflow}}$'
     return label
 
 def tex_labels(p):
-    if p=='alphaOutflow':
+    if p=='outflow_alpha':
         label = r'$\alpha_{\mathrm{outflow}}$'
-    if p=='alphaStar':
+    if p=='sfr_alpha':
         label = r'$\alpha_{\mathrm{\star}}$'
-    if p=='timescale':
+    if p=='sfr_timescale':
         label = r'$\tau_{0}$'
-    if p=='velocityOutflow':
+    if p=='outflow_velocity':
         label = r'$V_{\mathrm{outflow}}$'
     return label
 
@@ -86,39 +87,20 @@ def tex_labels(p):
 # c = alpha_outflow
 # d = vOutflow
 
-base_dir = '/data001/gdriskell/jwst_blitz_astro_samples/'
-df = pd.read_csv('final_df.csv')
+base_dir = '/carnegie/nobackup/users/gdriskell/jwst_data'
+df = pd.read_csv('paper_params.csv')
 
 cmaps = ['ember', 'amythest', 'freeze', 'nuclear']
 
-params = ['alphaStar','timescale','alphaOutflow','velocityOutflow']
+# params = ['sfr_alpha','sfr_timescale','outflow_alpha','outflow_velocity']
+params = ['outflow_velocity', 'outflow_alpha' , 'sfr_timescale', 'sfr_alpha']
 
-global nz
-nz = 17
-global z_grid
-z_grid = np.linspace(8.0, 16.0, nz)
-dz = z_grid[1]-z_grid[0]
+zidx = analysis.redshift_grid==8.0
 
-abs_min = -25.0
-abs_max = 0.
-dabs = 0.2
-nabs = int(round((abs_max-abs_min)/dabs))+1
-abs_grid = np.linspace(abs_min, abs_max, nabs) 
-dabs = abs_grid[1]-abs_grid[0]
-
-dMh = 0.15
-Mh_bins = np.arange(8.0, 11.76, dMh)
-global nm
-nm = len(Mh_bins)-1
-bin_centers = Mh_bins[:-1] + dMh/2.0 
-
-zidx = z_grid==8.0
-
-
-bestfit_alphaStar = -1.5
-bestfit_timescale = 0.1
-bestfit_velocityOutflow = 150
-bestfit_alphaOutflow = 1.5
+bestfit_sfr_alpha = -1.5
+bestfit_sfr_timescale = 0.1
+bestfit_outflow_velocity = 150
+bestfit_outflow_alpha = 1.5
 
 for p in params:
     # print(p)
@@ -126,30 +108,29 @@ for p in params:
     colors = iter([plt.cm.Dark2(i) for i in range(8)])
     title = title_labels(p)
     tex = tex_labels(p)
-    if p=='alphaStar':
+    if p=='sfr_alpha':
         cmap = 'cmr.ember'
-        param_path = 'starFormationRateDisks/starFormationTimescale/exponentVelocity'
+        param_path = 'starFormationRateDisks/starFormationsfr_timescale/exponentVelocity'
         # idx1 = get_idx(0,1,2,0)
         # idx2 = get_idx(1,1,2,0)
         # idx3 = get_idx(2,1,2,0)
         # values = [-3, -2, -1]
-
         values = [-4.0, -2.5, -1.0]
-    elif p=='timescale':
+    elif p=='sfr_timescale':
         cmap = 'cmr.bubblegum'
-        param_path = 'starFormationRateDisks/starFormationTimescale/timescale'
+        param_path = 'starFormationRateDisks/starFormationsfr_timescale/sfr_timescale'
         # idx1 = get_idx(0,1,0,0)
         # idx2 = get_idx(1,1,0,0)
         # idx3 = get_idx(2,1,0,0)
         values = [0.1, 0.5, 0.9]
-    elif p=='alphaOutflow':
+    elif p=='outflow_alpha':
         cmap = 'cmr.sapphire'
         param_path = 'nodeOperator/nodeOperator/stellarFeedbackOutflows/stellarFeedbackOutflows/exponent'
         # idx1 = get_idx(1,1,0,1)
         # idx2 = get_idx(1,1,1,1)
         # idx3 = get_idx(1,1,2,1)
         values = [0.5, 1.5, 2.5]
-    elif p=='velocityOutflow':
+    elif p=='outflow_velocity':
         cmap = 'cmr.nuclear'
         param_path = 'nodeOperator/nodeOperator/stellarFeedbackOutflows/stellarFeedbackOutflows/velocityCharacteristic'
         # idx1 = get_idx(0,0,0,0)
@@ -159,60 +140,60 @@ for p in params:
     for v in values:
         # print(v)
         label=tex+f'$={v}$'
-        # print(df['alphaStar'].unique())
+        # print(df['sfr_alpha'].unique())
         # print(p,idx)
         cmap_sub = cmr.get_sub_cmap(cmap, 0.25, 0.75)
         norm = mpl.colors.Normalize(vmin=np.amin(values), vmax=np.amax(values))
         sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap_sub)
-        # if (p=='alphaStar') or p=='alphaOutflow':
+        # if (p=='sfr_alpha') or p=='outflow_alpha':
         #     data_dir = f'/data001/gdriskell/jwst_blitz_astro_samples/fixed_ngdeep_params_p{idx}/'
-        # elif p=='timescale':
+        # elif p=='sfr_timescale':
         #     data_dir = f'/data001/gdriskell/jwst_blitz_astro_samples/plot_params_p{idx}/'
-        # elif p=='velocityOutflow':
+        # elif p=='outflow_velocity':
         #     data_dir = f'/data001/gdriskell/jwst_blitz_astro_samples/plot_params2_p{idx}/'
-        if p=='timescale':
+        if p=='sfr_timescale':
             idx = (
-                (df['alphaOutflow']==bestfit_alphaOutflow) & 
-                (df['velocityOutflow']==bestfit_velocityOutflow) & 
-                (df['timescale']== v) &
-                (df['alphaStar']==bestfit_alphaStar)
+                (df['outflow_alpha']==bestfit_outflow_alpha) & 
+                (df['outflow_velocity']==bestfit_outflow_velocity) & 
+                (df['sfr_timescale']== v) &
+                (df['sfr_alpha']==bestfit_sfr_alpha)
             )
             label += r'$\,\mathrm{Gyr}$'
-        elif p=='alphaOutflow':
+        elif p=='outflow_alpha':
             idx = (
-                (df['alphaOutflow']==v) & 
-                (df['velocityOutflow']==bestfit_velocityOutflow) & 
-                (df['timescale']== bestfit_timescale) &
-                (df['alphaStar']==bestfit_alphaStar)
+                (df['outflow_alpha']==v) & 
+                (df['outflow_velocity']==bestfit_outflow_velocity) & 
+                (df['sfr_timescale']== bestfit_sfr_timescale) &
+                (df['sfr_alpha']==bestfit_sfr_alpha)
             )
-        elif p=='alphaStar':
+        elif p=='sfr_alpha':
             idx = (
-                (df['alphaOutflow']==bestfit_alphaOutflow) & 
-                (df['velocityOutflow']==bestfit_velocityOutflow) & 
-                (df['timescale']== bestfit_timescale) &
-                (df['alphaStar']==v)
+                (df['outflow_alpha']==bestfit_outflow_alpha) & 
+                (df['outflow_velocity']==bestfit_outflow_velocity) & 
+                (df['sfr_timescale']==1.0) & #bestfit_sfr_timescale
+                (df['sfr_alpha']==v)
             )
-        elif p=='velocityOutflow':
+        elif p=='outflow_velocity':
             idx = (
-                (df['alphaOutflow']==bestfit_alphaOutflow) & 
-                (df['velocityOutflow']==v) & 
-                (df['timescale']== bestfit_timescale) &
-                (df['alphaStar']==bestfit_alphaStar)
+                (df['outflow_alpha']==bestfit_outflow_alpha) & 
+                (df['outflow_velocity']==v) & 
+                (df['sfr_timescale']== bestfit_sfr_timescale) &
+                (df['sfr_alpha']==bestfit_sfr_alpha)
             )
             label += r'$\,\mathrm{km/s}$'
             
         row = df[idx]
         # print(row['tag'].values[0])
-        tag = row['tag'].values[0]
-        pidx = row['idx'].values[0]
-        data_dir = path.join(base_dir, f'{tag}_p{pidx}/')
+        # tag = row['tag'].values[0]
+        pidx = row.index.values[0]
+        data_dir = path.join(base_dir, f'paper_params_p{pidx}/')
 
-        uvlf_fn = path.join(data_dir, 'interp_uvlf_abs.npy')
+        uvlf_fn = path.join(data_dir, 'absolute_uvlf.npy')
         uvlf = np.load(uvlf_fn)
-        uvlf = uvlf[:,zidx]/dabs
+        uvlf = uvlf[:,zidx]/analysis.dabs
         # color = next(colors)
         
-        plt.plot(abs_grid, np.log10(uvlf), lw=2.5, color=sm.to_rgba(v), label=label) # label='JWST best fit'
+        plt.plot(analysis.absolute_magnitude_grid, np.log10(uvlf), lw=2.5, color=sm.to_rgba(v), label=label) # label='JWST best fit'
     # plt.title(parameters_to_labels(p))
     # plt.title(title)
     ax = plt.gca()

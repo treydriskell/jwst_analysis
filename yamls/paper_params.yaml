@@ -1,10 +1,10 @@
 # astro_param.yaml
 
-base_dir: "/data001/gdriskell/jwst_blitz_astro_samples/"
-param_dir: "nr5"
-xml_template: "/home/gdriskell/galacticus/parameters/jwst-galaxies/timescale_template.xml"
-job_template: "/data001/gdriskell/jwst_blitz_astro_samples/jobs/simple_template.pbs"
-job_dir: "/data001/gdriskell/jwst_blitz_astro_samples/jobs"
+# base_dir: "/data001/gdriskell/jwst_blitz_astro_samples/"
+param_dir: "paper_params"
+# xml_template: "/home/gdriskell/galacticus/parameters/jwst-galaxies/timescale_template.xml"
+# job_template: "/data001/gdriskell/jwst_blitz_astro_samples/jobs/simple_template.pbs"
+# job_dir: "/data001/gdriskell/jwst_blitz_astro_samples/jobs"
 add_samples: false
 
 zs: ['8.0', '12.0', '16.0']
@@ -13,16 +13,16 @@ parameters:
   velocityOutflow: # default is 250.0
     path: 'nodeOperator/nodeOperator/stellarFeedbackOutflows/stellarFeedbackOutflows/velocityCharacteristic'
     sample: lin # options are 'lin,'log',false
-    min: 100
-    max: 200
-    nv: 11
+    min: 50
+    max: 500
+    nv: 46
 
   alphaOutflow: # default is 3.5
     path: 'nodeOperator/nodeOperator/stellarFeedbackOutflows/stellarFeedbackOutflows/exponent'
     sample: lin
-    min: 0.75
-    max: 2.25
-    nv: 4
+    min: 0.125
+    max: 2.5
+    nv: 20
 
   timescale: # default is 8.0
     path: 'starFormationRateDisks/starFormationTimescale/timescale'

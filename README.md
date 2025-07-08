@@ -15,3 +15,5 @@ Plots for the figure are generated as follows:
 - Figure 9: run plot_hst_uvlf.py (left) and smf_comp.py (right)
 
 Note that any plot that requires a best fit has the index hard-coded for now. If the best fit index were to change from 13845, you need to go in and change those indices by hand when loading the data.
+
+To run the Peacock test results, you need to download [ndtest](https://github.com/syrte/ndtest) and either run `test_jwst.py` from within ndtest or pip install it as a package.

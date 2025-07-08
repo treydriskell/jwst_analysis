@@ -1,12 +1,5 @@
-# astro_param.yaml
-
-# base_dir: "/data001/gdriskell/jwst_blitz_astro_samples/"
 param_dir: "paper_params"
-# xml_template: "/home/gdriskell/galacticus/parameters/jwst-galaxies/timescale_template.xml"
-# job_template: "/data001/gdriskell/jwst_blitz_astro_samples/jobs/simple_template.pbs"
-# job_dir: "/data001/gdriskell/jwst_blitz_astro_samples/jobs"
 add_samples: false
-
 zs: ['8.0', '12.0', '16.0']
 
 parameters:

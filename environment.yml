@@ -1,0 +1,15 @@
+name: jwst
+channels:
+  - defaults
+dependencies:
+  - h5py
+  - matplotlib
+  - numpy
+  - pandas
+  - python=3.10
+  - scipy
+  - seaborn
+  - astropy
+  - gcc==14.2.0
+  - cmasher
+prefix: /home/gdriskell/.conda/envs/jwst

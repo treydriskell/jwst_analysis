@@ -5,7 +5,7 @@ To run everything needed for the paper simply execute `run.py`. Below are detail
 
 ## Script Details 
 
-analysis.py loops through files and performs all the necessary analysis, saving results to <outfilename>.csv. Use "python analysis.py --help" to see which arguments need to be passed running analysis. If running for the first time using the raw data, it is recommended to run:
+analysis.py loops through files and performs all the necessary analysis, saving results to \<outfilename\>.csv. Use "python analysis.py --help" to see which arguments need to be passed running analysis. If running for the first time using the raw data, it is recommended to run:
 
 python analysis.py paper_params --initial 0 --final 73599 --save --n_jobs X
 

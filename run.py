@@ -1,9 +1,11 @@
 import os.path as path
 import subprocess
+from argparse import ArgumentParser
 
-
-def run(command):
+def run(command, dryrun=False):
     print('Running ' + ' '.join(command))
+    if dryrun:
+        return
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         print("Command executed successfully!")
@@ -23,35 +25,40 @@ def run(command):
 
 
 if __name__ == "__main__":
-    
+    parser = ArgumentParser(description="")
+    parser.add_argument("--dryrun", action='store_true', help="Do a dryrun")
+    parser.add_argument("--n_jobs", type=int, default=1, help="Number of jobs to run for analysis")
+    args = parser.parse_args()
+
     # run analysis, change n_jobs as you see fit
-    command = ['python', 'analysis.py', 'paper_params', '--initial', '0', '--final'
-               '73599', '--save', '--n_jobs', '1']
-    run(command)
+    command = ['python', 'analysis.py', 'paper_params', '--base', 
+                '/carnegie/scidata/groups/dmtheory/jwst_simulated_data', 
+                '--initial', '0', '--final', '73599', '--save', '--n_jobs', f'{args.n_jobs}']
+    run(command, args.dryrun)
 
     command = ['python', 'plotting.py']
-    run(command)
+    run(command, args.dryrun)
 
     command = ['python', 'astro_uvlf.py']
-    run(command)
+    run(command, args.dryrun)
 
     command = ['python', 'plot_muvz_data.py']
-    run(command)
+    run(command, args.dryrun)
 
     command = ['python', 'galform_comparison.py']
-    run(command)
+    run(command, args.dryrun)
 
     command = ['python', 'plot_hst_uvlf.py']
-    run(command)
+    run(command, args.dryrun)
     
     command = ['python', 'smf_comp.py']
-    run(command)
+    run(command, args.dryrun)
 
     command = ['python', 'compute_chi2.py']
-    run(command)
+    run(command, args.dryrun)
 
     command = ['python', 'test_jwst.py']
-    run(command)
+    run(command, args.dryrun)
 
     
 

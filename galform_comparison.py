@@ -7,10 +7,6 @@ mpl.use('agg')
 import matplotlib.pyplot as plt
 from astropy.cosmology import FlatLambdaCDM
 import itertools
-# import yaml 
-# import corner
-# import pandas as pd
-# from scipy.stats import chi2
 
 mpl.rcParams['text.usetex'] = False
 mpl.rcParams['xtick.labelsize'] = 15
@@ -56,96 +52,33 @@ def get_Muv_from_hdf5(outfile):
 
 
 def load_data(data_dir, z, reload=False):
-    # data_fn = path.join(data_dir, 'data.npy')
     stellar_masses = []
-    # logmhs = []
     zs = []
-    # bands = ['SDSS_u', 'SDSS_g', 'SDSS_r', 'SDSS_i', 'SDSS_z']
-    # for z in ['0.1']: #
-    # for z in ['8.0']:
     print(z)
-    # outfiles = [data_dir+f'z{z}:MPI{i:04d}.hdf5' for i in range(160)] #glob.glob(data_dir+f'z{z}:MPI*.hdf5')
     fn = data_dir+f'z{z}.hdf5'
     mhs_z = []
     mags_z = []
     weights_z = []
     print(fn)
-        # print(fn)
     f = h5py.File(fn,"r")
-    # if 'Outputs' in f:
-    # for band in bands:
     d,w = get_Muv_from_hdf5(f)
-    # mhs_z.append(d[:,0])
-    # mags_z.append(d[:,1])
-    # weights_z.append(w)
     mhs = d[:,0]
     idx = np.argsort(mhs)
     mhs = mhs[idx]
     stellarMass = d[:,1][idx]
     abs_mag = d[:,2][idx]
     w = w[idx]
-    # save_uvlf(data_dir, mhs, mags, w, z, band)
     f.close()
-    # print(stellarMass.shape)
-            
-        # raise Exception()
-    # logmhs.append(mhs)
-    # stellar_masses.append(stellarMass)
-        # abs_mags.append(abs)
-        # zs.extend([float(z) for i in range(len(logmhs[-1]))])
-    
-    # app_mags = np.concatenate(app_mags)
-    # stellar_masses = np.concatenate(stellar_masses)
-    # logmhs = np.concatenate(logmhs)
     zs = np.array(zs)
-    # data = np.stack([logmhs, zs, abs_mags], axis=1)
-    # np.save(data_fn, data)
     return mhs, zs, stellarMass, abs_mag
 
-
-# def behroozi_smhm_relation(logmh):
-#     """ From https://arxiv.org/pdf/1806.07893 """
-#     epsilon_0 = -1.431
-#     epsilon_a = 1.757
-#     epsilon_lna = 1.350
-#     epsilon_z = -0.218
-#     M_0 = 12.074
-#     M_a = 4.600
-#     alpha_lna = -1.816
-#     alpha_z = 0.182
-#     beta_0 = 0.470
-#     beta_a = -0.875
-#     beta_z - -0.487
-#     delta_0 = 0.386
-#     log10_M1 = M0 + Ma * (a-1) - Mlna * np.log(a) + Mz*z
-#     epsilon = epsilon_0 + epsilon_a * (a-1) - epsilon_loga * np.log(a) + epsilon_z * z
-#     alpha = alpha_0 + alpha_a * (a-1) - alpha_loga * np.log(a) + alpha_z * z
-#     beta = beta_0 + beta_a * (a-1) + beta_z * z
-#     log10_gamma = gamma_0 + gamma_a * (a-1) + gamma_z * z
-#     gamma = 10**log10_gamma
-#     x = logmh-log10_M1
-#     log10_Mstar = epsilon - np.log10(10**(-alpha*x)+10**(-beta*x))+gamma*np.exp(-0.5*(x/delta)**2) + log10_M1
-
-# gal_dirs = [
-#             '/data001/gdriskell/jwst_blitz_astro_samples/nr4_p60/']    
-
-
-# fn = '/data001/gdriskell/jwst_blitz_astro_samples/nr4_p60/'
-fn = '/carnegie/nobackup/users/gdriskell/jwst_data/paper_params_p13845/'
+fn = '/carnegie/scidata/groups/dmtheory/jwst_simulated_data/paper_params_p13845/'
 plot_zs = ['8.0', '12.0', '16.0']
 
 f, axs = plt.subplots(1,2, figsize=(12,5), constrained_layout=True) 
 for i in range(3):
-    # um_data = np.genfromtxt('uncertainties_smhm_true_med_cen.dat', names=True)
-    # print(um_files[i])
-    # print(um_data)
-    # print(um_data[0])
     c = plt.cm.Dark2(i)
-
-    # data_dir = '/data001/gdriskell/jwst_blitz_astro_samples/z0_params_p0/'
     logmhs, zs, stellar_masses, abs_mag = load_data(fn, plot_zs[i])
-    # print(stellar_masses)
-    # print(logmhs.shape, stellar_masses.shape)
 
     logmh_min = 9.0
     

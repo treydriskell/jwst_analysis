@@ -550,6 +550,7 @@ def calculate_likelihood(apparent_uvlf: NDArray) -> float:
 
 
 # these are globals to save a little bit of time when running the calculations
+# should probably get shoved into another file...
 ngdeep_data = pd.read_csv('data/ngdeep_data.csv')
 ngdeep_data = ngdeep_data[ngdeep_data['mf277w'] < 30.4]
 ngdeep_data.reset_index(inplace=True)
@@ -841,8 +842,7 @@ def get_astro_params(dirname, initial, final):
     return outflow_velocities, outflow_alphas, sfr_alphas, sfr_timescales
 
 
-def run(dirname, i, skewed, reload, recompute):
-    base = '/carnegie/nobackup/users/gdriskell/jwst_data/'
+def run(dirname, base, i, skewed, reload, recompute):
     data_directory = path.join(base, dirname+f'_p{i}/')
     loglike = evaluate_likelihood(i, data_directory, skewed, reload, recompute)
     return loglike
@@ -868,6 +868,7 @@ def save_results(loglikes, initial, final, dirname, outfilename):
 if __name__ == "__main__":
     parser = ArgumentParser(description="")
     parser.add_argument("dirname", help="Path to data directory")
+    parser.add_argument("--base", type=str,  help="Base directory for data files")
     parser.add_argument("--outfilename", type=str, default='', help="Output filename")
     parser.add_argument("--initial", type=int, help="Initial index to run")
     parser.add_argument("--final", type=int, help="Final index to run")
@@ -879,7 +880,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     start = time()
-    loglikes = Parallel(n_jobs=args.n_jobs)(delayed(run)(args.dirname, i, args.skewed,
+    loglikes = Parallel(n_jobs=args.n_jobs)(delayed(run)(args.dirname, args.base, i, args.skewed,
          args.reload, args.recompute,) for i in range(args.initial, args.final+1))
     print(f'for n={args.final-args.initial+1} total time = {time()-start}')
 

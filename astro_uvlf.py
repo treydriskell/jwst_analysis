@@ -87,7 +87,7 @@ def tex_labels(p):
 # c = alpha_outflow
 # d = vOutflow
 
-base_dir = '/carnegie/nobackup/users/gdriskell/jwst_data'
+base_dir = '/carnegie/scidata/groups/dmtheory/jwst_simulated_data'
 df = pd.read_csv('paper_params.csv')
 
 cmaps = ['ember', 'amythest', 'freeze', 'nuclear']

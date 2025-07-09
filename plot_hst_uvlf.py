@@ -206,50 +206,10 @@ def load_data(data_dir):
 
 app_cutoff = 30.4
 
-# # global analysis.redshift_grid
-# # global s 
-# dMh = 0.1
-# Mh_bins = np.arange(8.0, 11.76, dMh)
-# global nm
-# nm = len(Mh_bins)-1
-# bin_centers = Mh_bins[:-1] + dMh/2.0 
-
-# global nz
-# nz = 17
-# global analysis.redshift_grid
-# analysis.redshift_grid = np.linspace(8.0, 16.0, nz)
-# dz = analysis.redshift_grid[1]-analysis.redshift_grid[0]
-
-
-
-# logmhs = np.log10(np.geomspace(1.0e8,5.0e11,3699))
-# global binned_weights
-# binned_weights = get_binned_weights(Mh_bins,logmhs,zgrid_weights)
-# print(binned_weights)
-
-# abs_min = -25.0
-# abs_max = 0.
-# dabs = 0.2
-# nabs = int(round((abs_max-abs_min)/dabs))+1
-# analysis.absolute_magnitude_grid = np.linspace(abs_min, abs_max, nabs) 
-# dabs = analysis.absolute_magnitude_grid[1]-analysis.absolute_magnitude_grid[0]
-
-# app_min = 22.0
-# app_max = 45.0
-# dapp = 0.2
-# napp = int(round((app_max-app_min)/dapp))+1
-# app_grid = np.linspace(app_min, app_max, napp) 
-# dapp = app_grid[1]-app_grid[0]
-
-
-# z_volumes = (cosmo.comoving_volume(analysis.redshift_grid+dz/2.0)-cosmo.comoving_volume(analysis.redshift_grid-dz/2.0)).value 
-
-# output_tag = 'interp'
-
 plot_data(plt.gca())
 
 
-base_dir = '/carnegie/nobackup/users/gdriskell/jwst_data/'
+base_dir = '/carnegie/scidata/groups/dmtheory/jwst_simulated_data'
 df = pd.read_csv('paper_params.csv')
 df = df.sort_values('loglike', ascending=False)
 df.insert(len(df.columns), 'like', np.exp(df['loglike']))

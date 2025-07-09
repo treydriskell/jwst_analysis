@@ -319,7 +319,6 @@ def plot_uvlf(
         f, axs = plt.subplots(1, 2, figsize=(12,5),constrained_layout=True, sharey=True)
     _plot_survey_uvlf_data(axs[0],axs[1])
 
-    # z~9 plot
     ax = axs[0]
     averaged_uvlf = _average_uvlf(redshifts, 8.5, 9.5, uvlf, 
         magnitude_grid, volumes, app_cutoff)
@@ -387,8 +386,6 @@ def plot_sampled_uvlf(file_base, df, bestfit_uvlf):
     for index,row in samples.iterrows():
         # not sure why but some idx get saved as floats?
         fn = file_base+f'_p{int(round(row["idx"]))}/'
-        # print(fn)
-        # print(fn)
         uvlf = analysis.get_uvlf(None, None, fn, True, False)
         uvlf /= analysis.dabs
         z9_uvlf = _average_uvlf(analysis.redshift_grid, 8.5, 9.5, uvlf, 
@@ -401,15 +398,9 @@ def plot_sampled_uvlf(file_base, df, bestfit_uvlf):
 
     z9_ys = np.array(z9_ys)
     z11_ys = np.array(z11_ys)
-    # print(z9_ys.shape)
-    # print(bestfit_z9.shape)
-    # print()
+
     z9_diff = np.abs(z9_ys-bestfit_z9) 
     z11_diff = np.abs(z11_ys-bestfit_z11) 
-    # print(z9_diff.shape)
-
-    # oneSigmaScatter = []
-    # twoSigmaScatter = []
 
     for i,frac in enumerate([0.68, 0.95]):
         z11_lower = np.zeros_like(analysis.absolute_magnitude_grid)
@@ -478,7 +469,7 @@ def plot_sampled_uvlf(file_base, df, bestfit_uvlf):
     # plt.savefig(f'bracketed_uvlf.pdf')
     plt.close('all')
 
-# TODO
+
 def plot_Mh_given_fixed_Muv(data_directory, abs_probs, bweights):
     """Abs_probs is P(Muv|Mh) N_uv, N_z, N_h"""
 
@@ -514,7 +505,6 @@ def plot_Mh_given_fixed_Muv(data_directory, abs_probs, bweights):
     plt.close('all')
     
 
-# TODO
 def plot_Mh_from_data(data_directory, app_probs, bweights):
     """Abs_probs is P(Muv|Mh) N_uv, N_z, N_h"""
     # f, axs = plt.subplots(3, 1, figsize=(6,15), constrained_layout=True)
@@ -823,10 +813,9 @@ def plot_astro_like(df, parameters):
     # plt.savefig('old_triangle_like.pdf', bbox_inches='tight')
     plt.close('all')
 
-do_skewed = True
+do_skewed = False
 
 df = pd.read_csv('paper_params.csv')
-# df = pd.read_csv('old_paper_params.csv')
 df = df.sort_values('loglike', ascending=False)
 df.insert(len(df.columns), 'like', np.exp(df['loglike']))
 df.rename(columns={'Unnamed: 0':'idx'},inplace=True)
@@ -836,11 +825,9 @@ print(df.head(n=10))
 
 parameters = ['outflow_velocity', 'outflow_alpha', 'sfr_timescale', 
                 'sfr_alpha']
-# parameters = ['velocityOutflow', 'alphaOutflow', 'timescale', 
-#                 'alphaStar']
 
-base = '/carnegie/nobackup/users/gdriskell/jwst_data/'
-dirname = 'paper_params' # probably make this an argument in main 
+base = '/carnegie/scidata/groups/dmtheory/jwst_simulated_data'
+dirname = 'paper_params' 
 bestfit_index = df['idx'][df['like'].idxmax()]
 bestfit_directory = path.join(base, dirname+f'_p{bestfit_index}/')
 # print(bestfit_directory)
@@ -872,11 +859,10 @@ plot_uvlf(
     analysis.z_volumes, 
     bestfit_directory
 )
-# plot_Mh_given_fixed_Muv(bestfit_directory, bestfit_probs, analysis.binned_weights)
+plot_Mh_given_fixed_Muv(bestfit_directory, bestfit_abs_probs, analysis.binned_weights)
 plot_Mh_from_data_z(bestfit_directory, bestfit_app_probs, analysis.binned_weights)
 
-# file_base = base+dirname
-
-# plot_sampled_uvlf(file_base, df, bestfit_uvlf)
+file_base = base+dirname
+plot_sampled_uvlf(file_base, df, bestfit_uvlf)
 plot_astro_like(df, parameters)
 

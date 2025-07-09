@@ -5,9 +5,6 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import cmasher as cmr
-import sys
-sys.path.append('/home/gdriskell/jwst_analysis')
-os.chdir('/home/gdriskell/jwst_analysis')
 import analysis
 
 mpl.rcParams['text.usetex'] = False
@@ -62,10 +59,10 @@ f, axs = plt.subplots(1, 2, figsize=(12,5),constrained_layout=True)
 #data_pdf = ngdeep_pdf+ceers_pdf
 #data_pdf = np.sum(data_pdf, axis=0) / len(data_pdf)
 
-ngdeep_data = pd.read_csv('/home/gdriskell/jwst_analysis/data/ngdeep_data.csv')
+ngdeep_data = pd.read_csv('data/ngdeep_data.csv')
 ngdeep_data = ngdeep_data[ngdeep_data['mf277w'] < 30.4]
 ngdeep_data.reset_index(inplace=True)
-ceers_data = pd.read_csv('/home/gdriskell/jwst_analysis/data/CEERS_data.csv')
+ceers_data = pd.read_csv('data/CEERS_data.csv')
 ceers_data = ceers_data[ceers_data['mf277w'] < 29.15]
 ceers_data.reset_index(inplace=True)
 # print(len(ceers_data),len(ngdeep_data))
@@ -107,13 +104,8 @@ p3 = np.e**(-9./2.)
 p4 = np.e**(-16./2.)
 p5 = np.e**(-25./2.)
 
-
-
-ceers_theory_pdf = np.load('/carnegie/nobackup/users/gdriskell/jwst_data/paper_params_p13845/ceers_pdf.npy')#.reshape(napp,nz)
-ngdeep_theory_pdf = np.load('/carnegie/nobackup/users/gdriskell/jwst_data/paper_params_p13845/ngdeep_pdf.npy')#.reshape(napp,nz)
-
-
-
+ceers_theory_pdf = np.load('/carnegie/scidata/groups/dmtheory/jwst_simulated_data/paper_params_p13845/ceers_pdf.npy')#.reshape(napp,nz)
+ngdeep_theory_pdf = np.load('/carnegie/scidata/groups/dmtheory/jwst_simulated_data/paper_params_p13845/ngdeep_pdf.npy')#.reshape(napp,nz)
 
 levels = [p1,p2,p3][::-1] #p4,p5
 
@@ -220,7 +212,7 @@ axs[1].set_ylim(24.5, 30.5)
 axs[0].legend(frameon=False, fontsize=12)
 axs[1].legend(frameon=False, fontsize=12)
 # print()
-plt.savefig('/home/gdriskell/ndtest/muvz_viz.pdf') 
+plt.savefig('muvz_viz.pdf') 
 
 # print(sorted_idx[0])
 # while area < 0.68:

@@ -16,10 +16,11 @@ from time import time
 
 
 # this is just a convenient way to store the stats calculated from the data
-# fields = ['absolute_mean', 'absolute_sigma', 'absolute_min', 'absolute_max', 
-#         'apparent_mean', 'apparent_sigma', 'apparent_min', 'apparent_max']
-fields = ['absolute_median', 'absolute_sigma_left', 'absolute_sigma_right', 'absolute_min', 'absolute_max', 
-        'apparent_median', 'apparent_sigma_left', 'apparent_sigma_right', 'apparent_min', 'apparent_max', ]
+fields = ['absolute_mean', 'absolute_sigma', 'absolute_min', 'absolute_max', 
+        'apparent_mean', 'apparent_sigma', 'apparent_min', 'apparent_max']
+# below was used for skewed distributions which have been abandoned
+# fields = ['absolute_median', 'absolute_sigma_left', 'absolute_sigma_right', 'absolute_min', 'absolute_max', 
+#         'apparent_median', 'apparent_sigma_left', 'apparent_sigma_right', 'apparent_min', 'apparent_max', ]
 Stats = namedtuple('Stats', fields)
 
 rng = np.random.default_rng()
@@ -582,7 +583,6 @@ binned_weights = get_binned_weights(Mh_bins,logmhs,zgrid_weights, True)
 abs_min = -25.0
 abs_max = 0.
 dabs = 0.2
-# dabs = 0.1
 nabs = int(round((abs_max-abs_min)/dabs))+1
 absolute_magnitude_grid = np.linspace(abs_min, abs_max, nabs) 
 dabs = absolute_magnitude_grid[1]-absolute_magnitude_grid[0]

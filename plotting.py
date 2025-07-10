@@ -11,9 +11,9 @@ from collections import namedtuple
 import analysis
 import cmasher as cmr
 
-fields = ['absolute_mean', 'absolute_sigma', 'absolute_min', 'absolute_max', 
-        'apparent_mean', 'apparent_sigma', 'apparent_min', 'apparent_max']
-Stats = namedtuple('Stats', fields)
+# fields = ['absolute_mean', 'absolute_sigma', 'absolute_min', 'absolute_max', 
+#         'apparent_mean', 'apparent_sigma', 'apparent_min', 'apparent_max']
+# Stats = namedtuple('Stats', fields)
 
 # plot aesthetics, change as you see fit
 mpl.rcParams['text.usetex'] = False
@@ -89,7 +89,7 @@ def _get_confidence_intervals_bounds(
 
 def plot_probs(
     data: pd.DataFrame, 
-    stats: Stats,
+    stats: analysis.Stats,
     data_directory: str, 
     do_abs: bool,
     do_skewed: bool,
@@ -172,16 +172,18 @@ def plot_probs(
             ax.set_ylim(31.0,24.5)
             if i==0:
                 ax.set_ylabel(r'$m_{\mathrm{UV}}$')
-        # ax.set_xlim(8.9, 11.5)
-        ax.set_xlim(8.0, 11.5)
+        ax.set_xlim(8.9, 11.5)
+        # ax.set_xlim(8.0, 11.5)
         ax.legend(frameon=False, fontsize=12)
     ax.set_xlabel(r'$\mathrm{Log}\left(M_{h}\,/\,M_{\odot}\right)$')
     if do_abs:
         # plt.savefig(path.join(data_directory, 'skewed_absolute_sim_data_and_fit.pdf'))
-        plt.savefig('skewed_absolute_sim_data_and_fit.pdf')
+        # plt.savefig('skewed_absolute_sim_data_and_fit.pdf')
+        plt.savefig('absolute_sim_data_and_fit.pdf')
     else:
         # plt.savefig(path.join(data_directory, 'skewed_apparent_sim_data_and_fit.pdf'))
-        plt.savefig('skewed_apparent_sim_data_and_fit.pdf')
+        # plt.savefig('skewed_apparent_sim_data_and_fit.pdf')
+        plt.savefig('apparent_sim_data_and_fit.pdf')
     plt.close('all')
 
 
@@ -200,14 +202,20 @@ def _average_uvlf(
     survey. 
     """
     dz = redshifts[1]-redshifts[0]
+    # do_old = True
     z_left = redshifts-dz/2.0
     z_right = redshifts+dz/2.0
+    # if do_old:
+        
     zidx = (z_left >= lower_bound) & (z_right <= upper_bound)
-    # print(zidx)
+        # print(lower_bound, upper_bound, z_left[zidx], z_right[zidx])
+    # else:
+    #     zidx = (redshifts >= lower_bound) & (redshifts <= upper_bound)
+        # print(lower_bound, upper_bound, z_left[zidx], z_right[zidx])
+
     redshift_slice = redshifts[zidx]
     z_left_slice = z_left[zidx]
     z_right_slice = z_right[zidx]
-    # print(z_right_slice)
     zuvlf = uvlf[:,zidx]
     zvolume = volumes[zidx]
     totalV = np.zeros_like(magnitude_grid)
@@ -220,8 +228,6 @@ def _average_uvlf(
                 averaged_uvlf[i] += zuvlf[i,j]*zvolume[j]
                 totalV[i] += zvolume[j]
     averaged_uvlf /= totalV
-    # non_zero_idx = averaged_uvlf>0 
-    # averaged_uvlf = np.log10(averaged_uvlf[non_zero_idx]) # this is the problem, need to move it elsewhere
     return averaged_uvlf
 
 def _plot_survey_uvlf_data(ax1: plt.Axes, ax2: plt.Axes):
@@ -312,8 +318,8 @@ def plot_uvlf(
     save: bool=True,
 ):
     """ Plots the uvlf with survey data overlaid. 
-    
     """
+    # print("plot uvlf")
     app_cutoff = 30.4
     if axs is None:
         f, axs = plt.subplots(1, 2, figsize=(12,5),constrained_layout=True, sharey=True)
@@ -361,6 +367,11 @@ def plot_sampled_uvlf(file_base, df, bestfit_uvlf):
             analysis.absolute_magnitude_grid, analysis.z_volumes, app_cutoff)
     bestfit_z11 = _average_uvlf(analysis.redshift_grid, 9.5, 12.0, bestfit_uvlf, 
             analysis.absolute_magnitude_grid, analysis.z_volumes, app_cutoff)
+    
+    # new_bestfit_z9 = _average_uvlf(analysis.redshift_grid, 8.5, 9.5, bestfit_uvlf, 
+    #         analysis.absolute_magnitude_grid, analysis.z_volumes, app_cutoff)
+    # new_bestfit_z11 = _average_uvlf(analysis.redshift_grid, 9.5, 12.0, bestfit_uvlf, 
+    #         analysis.absolute_magnitude_grid, analysis.z_volumes, app_cutoff)
 
     plot_uvlf(
         analysis.absolute_magnitude_grid, 
@@ -386,7 +397,7 @@ def plot_sampled_uvlf(file_base, df, bestfit_uvlf):
     for index,row in samples.iterrows():
         # not sure why but some idx get saved as floats?
         fn = file_base+f'_p{int(round(row["idx"]))}/'
-        uvlf = analysis.get_uvlf(None, None, fn, True, False)
+        uvlf = analysis.get_uvlf(None, None, fn, True, False, False)
         uvlf /= analysis.dabs
         z9_uvlf = _average_uvlf(analysis.redshift_grid, 8.5, 9.5, uvlf, 
             analysis.absolute_magnitude_grid, analysis.z_volumes, app_cutoff)
@@ -458,15 +469,12 @@ def plot_sampled_uvlf(file_base, df, bestfit_uvlf):
     ax = axs[1]
     ax.set_title(r'$9.5<z<12.0$')
     ax.set_xlabel(r'$M_{\mathrm{UV}}$')
-    # ax.set_ylabel(r'$\mathrm{Log}\left(\phi_{\mathrm{UV}}\right)$')
     ax.legend(frameon=False, fontsize=12.5, loc='upper left')
     ax.set_xlim(-22.75, -17.1)
     ax.set_ylim(-6.0, -2.0)
     ax.set_yticks([-6,-5,-4,-3,-2])
-    # plt.savefig(path.join(data_dir, 'test_model_uvlf.png'), dpi=600)
-    # plt.savefig(f'sampled_uvlf_n{n_samples}.pdf')
-    plt.savefig(f'skewed_sampled_uvlf_CI.pdf')
-    # plt.savefig(f'bracketed_uvlf.pdf')
+
+    plt.savefig(f'sampled_uvlf_CI.pdf')
     plt.close('all')
 
 
@@ -533,7 +541,6 @@ def plot_Mh_from_data(data_directory, app_probs, bweights):
     plt.close('all')
 
 
-# TODO
 def plot_Mh_from_data_z(data_directory, app_probs, bweights):
     """Abs_probs is P(Muv|Mh) N_uv, N_z, N_h"""
     # f, axs = plt.subplots(1, 2, figsize=(12,6), constrained_layout=True, sharey=True)
@@ -808,9 +815,8 @@ def plot_astro_like(df, parameters):
     f.colorbar(sm, ax=axs[0,:], pad=pad, fraction=frac).ax.set_visible(False)
     f.colorbar(sm, ax=axs[1,:], pad=pad, fraction=frac).ax.set_visible(False)
     f.colorbar(sm, ax=axs[2,:], pad=pad, fraction=frac).ax.set_visible(False)
-    # plt.savefig('triangle_like.pdf', bbox_inches='tight')
-    plt.savefig('skewed_triangle_like.pdf', bbox_inches='tight')
-    # plt.savefig('old_triangle_like.pdf', bbox_inches='tight')
+    plt.savefig('triangle_like.pdf', bbox_inches='tight')
+    # plt.savefig('skewed_triangle_like.pdf', bbox_inches='tight')
     plt.close('all')
 
 do_skewed = False
@@ -832,12 +838,12 @@ bestfit_index = df['idx'][df['like'].idxmax()]
 bestfit_directory = path.join(base, dirname+f'_p{bestfit_index}/')
 # print(bestfit_directory)
 bestfit_data = analysis.load_data(bestfit_directory, True, False)
-bestfit_stats = analysis.get_skewed_stats(bestfit_data)
-bestfit_abs_probs = analysis.get_skewed_probs(analysis.absolute_magnitude_grid, bestfit_stats, 
+bestfit_stats = analysis.get_stats(bestfit_data)
+bestfit_abs_probs = analysis.get_probs(analysis.absolute_magnitude_grid, bestfit_stats, 
                                     bestfit_directory, True, False, False)
-bestfit_app_probs = analysis.get_skewed_probs(analysis.apparent_magnitude_grid, bestfit_stats, 
+bestfit_app_probs = analysis.get_probs(analysis.apparent_magnitude_grid, bestfit_stats, 
                                     bestfit_directory, False, False, False)
-bestfit_uvlf = analysis.get_uvlf(bestfit_abs_probs, analysis.binned_weights, bestfit_directory, True, True, False)
+bestfit_uvlf = analysis.get_uvlf(bestfit_abs_probs, analysis.binned_weights, bestfit_directory, True, False, False)
 plot_probs(
     bestfit_data, 
     bestfit_stats,
@@ -862,7 +868,7 @@ plot_uvlf(
 plot_Mh_given_fixed_Muv(bestfit_directory, bestfit_abs_probs, analysis.binned_weights)
 plot_Mh_from_data_z(bestfit_directory, bestfit_app_probs, analysis.binned_weights)
 
-file_base = base+dirname
+file_base = path.join(base,dirname)
 plot_sampled_uvlf(file_base, df, bestfit_uvlf)
 plot_astro_like(df, parameters)
 

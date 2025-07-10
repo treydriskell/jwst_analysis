@@ -16,7 +16,6 @@ n_ngdeep = len(ngdeep_data)
 obs_muv = np.concatenate((ngdeep_data['mf277w'],ceers_data['mf277w']))
 obs_z = np.concatenate((np.round(ngdeep_data['z']*2)/2,np.round(ceers_data['z']*2)/2))
 
-
 ceers_theory_pdf = np.load('/carnegie/scidata/groups/dmtheory/jwst_simulated_data/paper_params_p13845/ceers_pdf.npy')
 ngdeep_theory_pdf = np.load('/carnegie/scidata/groups/dmtheory/jwst_simulated_data/paper_params_p13845/ngdeep_pdf.npy')
 

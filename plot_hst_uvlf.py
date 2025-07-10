@@ -209,18 +209,17 @@ app_cutoff = 30.4
 plot_data(plt.gca())
 
 
-base_dir = '/carnegie/scidata/groups/dmtheory/jwst_simulated_data'
+base_dir = '/carnegie/scidata/groups/dmtheory/jwst_simulated_data/'
 df = pd.read_csv('paper_params.csv')
 df = df.sort_values('loglike', ascending=False)
 df.insert(len(df.columns), 'like', np.exp(df['loglike']))
-
 
 z_left = analysis.redshift_grid-analysis.dz/2.0
 z_right = analysis.redshift_grid+analysis.dz/2.0
 
 bffn = base_dir+f'paper_params_p13845/'
 # print(fn)
-uvlf = analysis.get_uvlf(None,None,bffn,True,False)/analysis.dabs
+uvlf = analysis.get_uvlf(None,None,bffn,True,False,False)/analysis.dabs
 zidx = analysis.redshift_grid == 8.0
 zs = analysis.redshift_grid[zidx]
 z_left_slice = z_left[zidx]
@@ -260,7 +259,7 @@ for index,row in samples.iterrows():
     fn = base_dir+f'paper_params_p{index}/'
     if fn != bffn:
         # print(fn)
-        uvlf = analysis.get_uvlf(None,None,fn,True,False)/analysis.dabs
+        uvlf = analysis.get_uvlf(None,None,fn,True,False,False)/analysis.dabs
         zidx = (analysis.redshift_grid == 8.0) 
         zs = analysis.redshift_grid[zidx]
         z_left_slice = z_left[zidx]

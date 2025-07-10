@@ -27,14 +27,17 @@ def run(command, dryrun=False):
 if __name__ == "__main__":
     parser = ArgumentParser(description="")
     parser.add_argument("--dryrun", action='store_true', help="Do a dryrun")
+    parser.add_argument("--run_analysis", action='store_true', help="Run the analysis pipeline")
     parser.add_argument("--n_jobs", type=int, default=1, help="Number of jobs to run for analysis")
     args = parser.parse_args()
 
     # run analysis, change n_jobs as you see fit
-    command = ['python', 'analysis.py', 'paper_params', '--base', 
-                '/carnegie/scidata/groups/dmtheory/jwst_simulated_data', 
-                '--initial', '0', '--final', '73599', '--save', '--n_jobs', f'{args.n_jobs}']
-    run(command, args.dryrun)
+    # analysis is optional since it can take a while
+    if args.run_analysis:
+        command = ['python', 'analysis.py', 'paper_params', '--base', 
+                    '/carnegie/scidata/groups/dmtheory/jwst_simulated_data', 
+                    '--initial', '0', '--final', '73599', '--save', '--n_jobs', f'{args.n_jobs}']
+        run(command, args.dryrun)
 
     command = ['python', 'plotting.py']
     run(command, args.dryrun)

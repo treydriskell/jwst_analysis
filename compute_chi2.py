@@ -3,33 +3,14 @@ import h5py
 import numpy as np
 # import os
 import os.path as path
-# from astropy.cosmology import FlatLambdaCDM
+from astropy.cosmology import FlatLambdaCDM
 import itertools
 import analysis
 
 rng = np.random.default_rng()
 
 # global cosmo
-# cosmo = FlatLambdaCDM(H0=70.000, Om0=0.286, Tcmb0=2.72548, Ob0=0.047)
-
-
-# def binned_uvlf(weights, Muvs):
-#     min_Muv = -23 #np.amin(Muvs)
-#     max_Muv = -10 # np.amax(Muvs)
-#     dMuv = 0.5
-#     nbins = int((max_Muv-min_Muv)/dMuv)
-#     Muv_bins = np.linspace(min_Muv, max_Muv, nbins+1)
-#     # dMuv = (max_Muv-min_Muv) / float(nbin)
-#     # print(dMuv)
-#     uvlf = []
-#     for j in range(nbins):
-#         idx = np.argwhere((Muv_bins[j] < Muvs) & (Muvs < Muv_bins[j+1]))
-#         uvlf.append(np.sum(weights[idx]))
-#     uvlf = np.array(uvlf)/dMuv
-#     x = Muv_bins[:-1]+dMuv/2.0
-#     # out = np.stack((x, uvlf)).T
-#     return x, uvlf
-
+cosmo = FlatLambdaCDM(H0=70.000, Om0=0.286, Tcmb0=2.72548, Ob0=0.047)
 
 z9_upper = np.zeros_like(analysis.absolute_magnitude_grid)
 z9_lower = np.ones_like(analysis.absolute_magnitude_grid)
@@ -37,23 +18,21 @@ z11_upper = np.zeros_like(analysis.absolute_magnitude_grid)
 z11_lower = np.ones_like(analysis.absolute_magnitude_grid)
 
 base_dir = '/carnegie/scidata/groups/dmtheory/jwst_simulated_data'
-# df = pd.read_csv('paper_params.csv')
 
 bestfit_directory = path.join(base_dir, 'paper_params_p13845/')
 bestfit_data = analysis.load_data(bestfit_directory, True, False)
-bestfit_stats = analysis.get_skewed_stats(bestfit_data)
-bestfit_abs_probs = analysis.get_skewed_probs(analysis.absolute_magnitude_grid, bestfit_stats, 
+bestfit_stats = analysis.get_stats(bestfit_data)
+bestfit_abs_probs = analysis.get_probs(analysis.absolute_magnitude_grid, bestfit_stats, 
                                     bestfit_directory, True, False, False)
-bestfit_app_probs = analysis.get_skewed_probs(analysis.apparent_magnitude_grid, bestfit_stats, 
-                                    bestfit_directory, False, False, False)
-uvlf = analysis.get_uvlf(analysis.bestfit_abs_probs, analysis.binned_weights, bestfit_directory, True, True, False)
+uvlf = analysis.get_uvlf(bestfit_abs_probs, analysis.binned_weights, bestfit_directory, True, False, False)
+uvlf /= analysis.dabs
 
-app_cutoff = 30.1
+app_cutoff = 30.4
 
 z_left = analysis.redshift_grid - analysis.dz/2.0
 z_right = analysis.redshift_grid + analysis.dz/2.0
 
-zidx = (z_left > 8.5) & (z_right < 9.5)
+zidx = (z_left >= 8.5) & (z_right <= 9.5)
 zs = analysis.redshift_grid[zidx]
 z_left_slice = z_left[zidx]
 z_right_slice = z_right[zidx]
@@ -63,18 +42,12 @@ totalV = np.zeros_like(analysis.absolute_magnitude_grid)
 y = np.zeros_like(analysis.absolute_magnitude_grid)
 for j,muv in enumerate(analysis.absolute_magnitude_grid):
     for k in range(len(zs)):
-        # left > right
-        # left_cutoff = app_cutoff - cosmo.distmod(z_left_slice[j]).value + 2.5*np.log10(1+z_left_slice[j])
-        # right_cutoff = app_cutoff - cosmo.distmod(z_right_slice[k]).value + 2.5*np.log10(1+z_right_slice[k])
-        # if muv < right_cutoff:
-        y[j] += zuvlf[j,k]*zvolume[k]
-        totalV[j] += zvolume[k]
-        # elif muv < left_cutoff:
-        #     volume = 
+        right_cutoff = app_cutoff - cosmo.distmod(z_right_slice[k]).value + 2.5*np.log10(1+z_right_slice[k])
+        if muv < right_cutoff:
+            y[j] += zuvlf[j,k]*zvolume[k]
+            totalV[j] += zvolume[k]
 y /= totalV
 bestfit_z9 = y
-# axs[0].plot(analysis.absolute_magnitude_grid, np.log10(y), '-k', label='Best fit')
-
 
 zidx = (z_left > 9.5) & (z_right < 12.0)
 zs = analysis.redshift_grid[zidx]
@@ -86,19 +59,12 @@ totalV = np.zeros_like(analysis.absolute_magnitude_grid)
 y = np.zeros_like(analysis.absolute_magnitude_grid)
 for j,muv in enumerate(analysis.absolute_magnitude_grid):
     for k in range(len(zs)):
-        # left > right
-        # left_cutoff = app_cutoff - cosmo.distmod(z_left_slice[j]).value + 2.5*np.log10(1+z_left_slice[j])
-        # right_cutoff = app_cutoff - cosmo.distmod(z_right_slice[k]).value + 2.5*np.log10(1+z_right_slice[k])
-        # # if j==0:
-        #     # print(right_cutoff)
-        # if muv < right_cutoff:
-        y[j] += zuvlf[j,k]*zvolume[k]
-        totalV[j] += zvolume[k]
-        # elif muv < left_cutoff:
-        #     volume = 
+        right_cutoff = app_cutoff - cosmo.distmod(z_right_slice[k]).value + 2.5*np.log10(1+z_right_slice[k])
+        if muv < right_cutoff:
+            y[j] += zuvlf[j,k]*zvolume[k]
+            totalV[j] += zvolume[k]
 y /= totalV
 bestfit_z11 = y
-# axs[1].plot(analysis.absolute_magnitude_grid, np.log10(y), '-k', label='Best fit')
 
 zidx = (z_left > 13) & (z_right <= 15.0)
 zs = analysis.redshift_grid[zidx]
@@ -110,16 +76,10 @@ totalV = np.zeros_like(analysis.absolute_magnitude_grid)
 y = np.zeros_like(analysis.absolute_magnitude_grid)
 for j,muv in enumerate(analysis.absolute_magnitude_grid):
     for k in range(len(zs)):
-        # left > right
-        # left_cutoff = app_cutoff - cosmo.distmod(z_left_slice[j]).value + 2.5*np.log10(1+z_left_slice[j])
-        # right_cutoff = app_cutoff - cosmo.distmod(z_right_slice[k]).value + 2.5*np.log10(1+z_right_slice[k])
-        # # if j==0:
-        #     # print(right_cutoff)
-        # if muv < right_cutoff:
-        y[j] += zuvlf[j,k]*zvolume[k]
-        totalV[j] += zvolume[k]
-        # elif muv < left_cutoff:
-        #     volume = 
+        right_cutoff = app_cutoff - cosmo.distmod(z_right_slice[k]).value + 2.5*np.log10(1+z_right_slice[k])
+        if muv < right_cutoff:
+            y[j] += zuvlf[j,k]*zvolume[k]
+            totalV[j] += zvolume[k]
 y /= totalV
 bestfit_z14 = y
 
@@ -128,18 +88,11 @@ ngdeep_muv = [-20.1, -19.1, -18.35, -17.85, -17.35]
 ngdeep_phi = np.array([14.7e-5, 18.9e-5, 74.0e-5, 170.0e-5, 519.0e-5])
 ngdeep_phi_err_lower = np.array([7.2e-5, 8.9e-5, 29.0e-5, 65.e-5, 198.e-5])
 ngdeep_phi_err_upper = np.array([11.1e-5, 13.8e-5, 41.4e-5, 85.e-5, 248.e-5])
-# ngdeep_log_phi = np.log10(ngdeep_phi)
-# ngdeep_log_err = [ngdeep_log_phi-np.log10(ngdeep_phi-ngdeep_phi_err[0,:]),np.log10(ngdeep_phi+ngdeep_phi_err[1,:])-ngdeep_log_phi]
-# ngdeep_log_err2 = [ngdeep_log_phi-np.log10(ngdeep_phi-ngdeep_phi_err[0,:]*2),np.log10(ngdeep_phi+ngdeep_phi_err[1,:]*2)-ngdeep_log_phi]
 
 ceers_muv_z9 = [-22.0, -21.0, -20.5, -20.0, -19.5, -19.0, -18.5]
 ceers_phi_z9 = np.array([1.1e-5, 2.2e-5, 8.2e-5, 9.6e-5, 28.6e-5, 26.8e-5, 136.0e-5])
-# ceers_log_phi = np.log10(ceers_phi_z9)
 ceers_upper_z9 = np.array([0.7e-5, 1.3e-5, 4.0e-5, 4.6e-5, 11.5e-5, 12.4e-5, 61.0e-5])
 ceers_lower_z9 = np.array([0.6e-5, 1.0e-5, 3.2e-5, 3.6e-5, 9.1e-5, 10.0e-5,49.9e-5])
-# ceers_log_err = [ceers_log_phi-np.log10(ceers_phi_z9-ceers_lower_z9),np.log10(ceers_phi_z9+ceers_upper_z9)-ceers_log_phi]
-# ceers_log_lower_err2 = ceers_log_phi-np.log10(ceers_phi_z9-ceers_lower_z9*2)
-# ceers_log_upper_err2 = np.log10(ceers_phi_z9+ceers_upper_z9*2)-ceers_log_phi
 
 ngdeep_chi2_z9 = np.zeros_like(ngdeep_phi)
 # chi2_z9 = 0
@@ -181,19 +134,11 @@ ngdeep_muv = [-19.35, -18.65, -17.95, -17.25]
 ngdeep_phi = np.array([18.5e-5, 27.7e-5, 59.1e-5, 269.0e-5])
 ngdeep_phi_err_lower = np.array([8.3e-5, 13.0e-5, 29.3e-5, 124.e-5])
 ngdeep_phi_err_upper = np.array([11.9e-5, 18.3e-5, 41.9e-5, 166.e-5])
-# obs_log_phi = np.log10(ngdeep_phi)
-# log_err = [obs_log_phi-np.log10(ngdeep_phi-ngdeep_phi_err[0,:]),np.log10(ngdeep_phi+ngdeep_phi_err[1,:])-obs_log_phi]
-# log_err2 = [obs_log_phi-np.log10(ngdeep_phi-ngdeep_phi_err[0,:]*2),np.log10(ngdeep_phi+ngdeep_phi_err[1,:]*2)-obs_log_phi]
 
 ceers_muv_z11 = [-20.5, -20.0, -19.5, -19.0, -18.5]
 ceers_phi_z11 = np.array([1.8e-5, 5.4e-5, 7.6e-5, 17.6e-5, 26.3e-5])
-# ceers_log_phi = np.log10(ceers_phi_z11)
 ceers_upper_z11 = np.array([1.2e-5, 2.7e-5, 3.9e-5, 10.3e-5, 18.2e-5])
 ceers_lower_z11 = np.array([0.9e-5, 2.1e-5, 3.0e-5, 7.9e-5, 13.3e-5])
-# ceers_log_err = [ceers_log_phi-np.log10(ceers_phi_z11-ceers_lower_z11),np.log10(ceers_phi_z11+ceers_upper_z11)-ceers_log_phi]
-# ceers_log_err2 = [ceers_log_phi-np.log10(ceers_phi_z11-ceers_lower_z11*2),np.log10(ceers_phi_z11+ceers_upper_z11*2)-ceers_log_phi]
-# ceers_log_err2[0]=ceers_log_err2[0][1:][:-1]
-# ceers_log_err2[1]=ceers_log_err2[1][1:][:-1]
 
 ceers_muv_z14 = [-20.0, -19.5]
 ceers_phi_z14 = np.array([2.6e-5, 7.3e-5])
@@ -251,7 +196,7 @@ nc_z14 = len(ceers_chi2_z14)
 
 print(f'Total chi2 = {(chi2_z11+chi2_z9+chi2_z14)/(nc_z11+ng_z11+nc_z9+ng_z9+nc_z14-4)}')
 
-print(nc_z11+ng_z11+nc_z9+ng_z9+nc_z14)
+# print(nc_z11+ng_z11+nc_z9+ng_z9+nc_z14)
 
 
 # HST chi2
@@ -291,10 +236,10 @@ for j,muv in enumerate(analysis.absolute_magnitude_grid):
     for k in range(len(zs)):
         # left > right
         # left_cutoff = app_cutoff - cosmo.distmod(z_left_slice[j]).value + 2.5*np.log10(1+z_left_slice[j])
-        # right_cutoff = app_cutoff - cosmo.distmod(z_right_slice[k]).value + 2.5*np.log10(1+z_right_slice[k])
-        # if muv < right_cutoff:
-        y[j] += zuvlf[j,k]*zvolume[k]
-        totalV[j] += zvolume[k]
+        right_cutoff = app_cutoff - cosmo.distmod(z_right_slice[k]).value + 2.5*np.log10(1+z_right_slice[k])
+        if muv < right_cutoff:
+            y[j] += zuvlf[j,k]*zvolume[k]
+            totalV[j] += zvolume[k]
         # elif muv < left_cutoff:
         #     volume = 
 y /= totalV
@@ -312,17 +257,20 @@ n_hst = 0
 
 for muv,phi,err_upper,err_lower in zip(muvs, phis, err_upper, err_lower):
     for i,m in enumerate(muv):
-        print(m)
+        # print(m)
         n_hst += 1
         midx = np.argmin(np.abs(analysis.absolute_magnitude_grid-m))
         bf_i = bestfit_z8[midx]
         hst_i = phi[i]
-        print(bf_i, hst_i,  err_upper[i],  err_lower[i])
+        # print(m, bf_i, hst_i,  err_upper[i],  err_lower[i])
         if bf_i>ng_i:
             hst_chi2 += (bf_i-hst_i)**2 / err_upper[i]**2
         else:
             hst_chi2 += (bf_i-hst_i)**2 / err_lower[i]**2
-        print(hst_chi2/n_hst)
+        # print(hst_chi2/n_hst)
 
 print(hst_chi2,n_hst)
 print(f'HST chi2 is {hst_chi2/n_hst}')
+
+print("WE KNOW THAT JWST AND HST DATA ARE IN TENSION AT BRIGHT END, LARGE CHI2 MAY \
+BE REASONABLE. USE AT YOUR OWN RISK")

@@ -97,10 +97,10 @@ params = ['outflow_velocity', 'outflow_alpha' , 'sfr_timescale', 'sfr_alpha']
 
 zidx = analysis.redshift_grid==8.0
 
-bestfit_sfr_alpha = -1.5
+bestfit_sfr_alpha = -4.0
 bestfit_sfr_timescale = 0.1
-bestfit_outflow_velocity = 150
-bestfit_outflow_alpha = 1.5
+bestfit_outflow_velocity = 130
+bestfit_outflow_alpha = 1.75
 
 for p in params:
     # print(p)

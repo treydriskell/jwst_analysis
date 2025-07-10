@@ -63,5 +63,5 @@ if __name__ == "__main__":
     command = ['python', 'test_jwst.py']
     run(command, args.dryrun)
 
-    
-
+    command = ['python', 'plot_appendix.py']
+    run(command, args.dryrun)

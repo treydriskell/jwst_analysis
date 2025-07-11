@@ -862,7 +862,13 @@ def save_results(loglikes, initial, final, dirname, outfilename):
     else:
         output_csv_filename = f'{dirname}.csv'
     print(f'Saving to {output_csv_filename}')
-    df.to_csv(output_csv_filename)
+
+    df.rename(columns={'Unnamed: 0':'idx'},inplace=True)
+    df.insert(len(df.columns), 'like', np.exp(df['loglike']))
+    df = df.sort_values('loglike', ascending=False)
+
+    df.to_csv(output_csv_filename)    
+    print(df.head(n=10))
 
 
 if __name__ == "__main__":

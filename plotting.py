@@ -822,10 +822,10 @@ def plot_astro_like(df, parameters):
 do_skewed = False
 
 df = pd.read_csv('paper_params.csv')
-df = df.sort_values('loglike', ascending=False)
-df.insert(len(df.columns), 'like', np.exp(df['loglike']))
-df.rename(columns={'Unnamed: 0':'idx'},inplace=True)
-print(df.head(n=10))
+# df = df.sort_values('loglike', ascending=False)
+# df.insert(len(df.columns), 'like', np.exp(df['loglike']))
+# df.rename(columns={'Unnamed: 0':'idx'},inplace=True)
+# print(df.head(n=10))
 
 parameters = ['outflow_velocity', 'outflow_alpha', 'sfr_timescale', 
                 'sfr_alpha']

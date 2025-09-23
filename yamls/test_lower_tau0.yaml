@@ -1,13 +1,8 @@
-# astro_param.yaml
-
-# base_dir: "/data001/gdriskell/jwst_blitz_astro_samples/"
 param_dir: "test_lower_tau0"
-# xml_template: "/home/gdriskell/galacticus/parameters/jwst-galaxies/z0.35_template.xml"
-# job_template: "/data001/gdriskell/jwst_blitz_astro_samples/jobs/simple_template.pbs"
-# job_dir: "/data001/gdriskell/jwst_blitz_astro_samples/jobs"
+xml_template: "/home/gdriskell/jwst_analysis/xmls/timescale_template.xml"
+
 
 zs: ['16.0', '12.0', '8.0']
-# zs: ['8.0']
 
 parameters:
   velocityOutflow: # default is 250.0

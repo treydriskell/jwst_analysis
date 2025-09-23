@@ -1,5 +1,5 @@
 param_dir: "paper_params"
-add_samples: false
+xml_template: "/home/gdriskell/jwst_analysis/xmls/timescale_template.xml"
 zs: ['8.0', '12.0', '16.0']
 
 parameters:

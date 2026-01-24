@@ -190,4 +190,4 @@ Parameter sets are defined in YAML files in the `yamls/` directory. These files 
 
 ## Citation
 
-If you use this code or data in your research, please cite the relevant papers and acknowledge the original data sources (UniverseMachine, CEERS, NGDEEP surveys).
+If you use this code or data in your research, please cite [our paper](https://arxiv.org/abs/2410.11680) and acknowledge the original data sources (UniverseMachine, CEERS, NGDEEP surveys).

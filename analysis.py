@@ -1,3 +1,16 @@
+"""
+Analysis module for processing JWST simulated data from Galacticus.
+
+This module provides functions to:
+- Load and process Galacticus HDF5 output files
+- Calculate galaxy-halo connection statistics
+- Compute UV luminosity functions
+- Evaluate likelihoods for parameter estimation
+- Generate probability distributions for observational data
+
+The analysis uses a cosmology with H0=70.0 km/s/Mpc, Om0=0.286, and processes
+data at redshifts z=8.0, 12.0, and 16.0.
+"""
 
 import h5py
 import numpy as np
@@ -10,22 +23,19 @@ from joblib import Parallel, delayed
 from numpy.typing import NDArray
 from collections import namedtuple
 import scipy
+import scipy.stats
+import scipy.optimize
 from time import time
-# from scipy.optimize import minimize
-# import scipy.stats as stats
 
 
-# this is just a convenient way to store the stats calculated from the data
+# Namedtuple for storing statistics calculated from the data
 fields = ['absolute_mean', 'absolute_sigma', 'absolute_min', 'absolute_max', 
         'apparent_mean', 'apparent_sigma', 'apparent_min', 'apparent_max']
-# below was used for skewed distributions which have been abandoned
-# fields = ['absolute_median', 'absolute_sigma_left', 'absolute_sigma_right', 'absolute_min', 'absolute_max', 
-#         'apparent_median', 'apparent_sigma_left', 'apparent_sigma_right', 'apparent_min', 'apparent_max', ]
 Stats = namedtuple('Stats', fields)
 
 rng = np.random.default_rng()
 
-# cosmology to be used throughout the analysis once
+# Cosmology used throughout the analysis
 cosmo = FlatLambdaCDM(H0=70.000, Om0=0.286, Tcmb0=2.72548, Ob0=0.047)
 
 
@@ -34,23 +44,34 @@ def get_weights_from_hmf(
     load: bool = True,
     save: bool = True,
 ) -> NDArray:
-    """Converts hmf output by Galacticus to corresponding merger tree weights.
+    """Convert halo mass function (HMF) output to corresponding merger tree weights.
     
-    This is done to evaluate the hmf at intermediate z. Corresponding 
-    merger tree weights will be saved to output file data/hmf_weights.npy if 
-    save is True. If load is True, data will be loaded instead of recomputed
-    unless unavailable. 
-    
-    Note: currently the number of redshifts the array is evaluated on is hardcoded (17).
+    Converts HMF output from Galacticus to merger tree weights for evaluating
+    the HMF at intermediate redshifts. The weights are computed by integrating
+    the HMF over halo mass bins.
 
-    Parameters:
-        filename: path to the (input) hmf hdf5 file. 
-        load: if True, will attempt to load file first 
-        save: if True, will save the output to file data/hmf_weights.npy 
+    Parameters
+    ----------
+    filename : str
+        Path to the input HMF HDF5 file from Galacticus.
+    load : bool, optional
+        If True, attempts to load pre-computed weights from 'data/hmf_weights.npy'
+        instead of recomputing. Default is True.
+    save : bool, optional
+        If True, saves the computed weights to 'data/hmf_weights.npy'.
+        Default is True.
 
-    Returns:
-        A numpy array of the merger tree weights evaluated on a grid of z values
-        in increasing order of redshift.
+    Returns
+    -------
+    NDArray
+        Array of shape (n_redshifts, n_mass_bins) containing merger tree weights
+        evaluated on a grid of redshift values. The number of redshifts is
+        currently hardcoded to 17.
+
+    Notes
+    -----
+    The halo mass range (1.0e8 to 5.0e11 Msun) and number of bins (3699) are
+    hardcoded. The number of redshifts (17) is also hardcoded.
     """
     output_filename = 'data/hmf_weights.npy' 
     if load and path.isfile(output_filename):
@@ -58,15 +79,17 @@ def get_weights_from_hmf(
     else:
         weights = []
         f = h5py.File(filename,"r")
-        halo_masses = np.geomspace(1.0e8, 5.0e11, 3699) # Warning: Hard coded!
+        # Hardcoded: halo mass range and number of bins
+        halo_masses = np.geomspace(1.0e8, 5.0e11, 3699)
         log_halo_masses = np.log10(halo_masses)
         log_delta_mh = log_halo_masses[1] - log_halo_masses[0]
         left_bin_edge = 10**(log_halo_masses - log_delta_mh/2.0)
         right_bin_edge = 10**(log_halo_masses + log_delta_mh/2.0)
         bin_size = right_bin_edge - left_bin_edge
         weights = []
+        # Hardcoded: number of redshifts (17)
         for i in range(17):
-            j = 17-i # Warning: Hard coded!
+            j = 17-i
             output = f[f'Outputs/Output{j}']
             hmf = output['haloMassFunctionM'] 
             weight = bin_size * hmf
@@ -79,11 +102,28 @@ def get_weights_from_hmf(
 
 
 def get_data_from_hdf5(filename: str, jwst_filter_name: str) -> NDArray:
-    """ Extracts the log halo masses, magnitudes, and weights from galacticus hdf5 file.
+    """Extract log halo masses, magnitudes, and weights from Galacticus HDF5 file.
 
-    Args:
-        filename: path to hdf5 file. 
-        jwst_filter_name: name of jwst filter for luminosities.
+    Extracts galaxy properties from a Galacticus output HDF5 file, including
+    halo masses, absolute and apparent magnitudes, redshifts, and merger tree
+    weights. Data is sorted by halo mass.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the Galacticus HDF5 output file.
+    jwst_filter_name : str
+        Name of the JWST filter for luminosities (e.g., 'JWST_NIRCAM_f277w').
+
+    Returns
+    -------
+    NDArray
+        Array of shape (n_galaxies, 5) containing:
+        - Column 0: log10(halo mass) [Msun]
+        - Column 1: apparent magnitude
+        - Column 2: absolute magnitude
+        - Column 3: redshift
+        - Column 4: merger tree weight
     """
     outfile = h5py.File(filename, "r")
     outputs = outfile['Outputs']    
@@ -95,7 +135,7 @@ def get_data_from_hdf5(filename: str, jwst_filter_name: str) -> NDArray:
     dfilename = f'diskLuminositiesStellar:{jwst_filter_name}:observed:z{z:.4f}'
     
     luminosity = node_data[sfilename][:] + node_data[dfilename][:] 
-    # sets a lower limit on the luminosity to prevent 0 in log
+    # Set lower limit on luminosity to prevent log(0)
     luminosity[luminosity<1.0e-10] = 1.0e-10 
     absolute_mag = -2.5 * np.log10(luminosity)
     apparent_mag = absolute_mag + cosmo.distmod(z).value - 2.5*np.log10(1+z)
@@ -111,18 +151,28 @@ def get_data_from_hdf5(filename: str, jwst_filter_name: str) -> NDArray:
 
 
 def get_ngdeep_completeness(apparent_grid: NDArray) -> NDArray:
-    """ Estimates the completeness function for the NGDEEP survey.
+    """Estimate the completeness function for the NGDEEP survey.
     
-    Uses data from Table 2 of https://arxiv.org/pdf/2306.06244. Uses z~9 data,
-    normalizes by the largest volume, and linearly interpolates between mag bins.
-    Sets completeness to 0 at 5sigma limiting depth from Table 1.
-    
-    Args:
-        apparent_grid: Array of apparent magnitude to evaluate completeness
-          function on to.
-    Returns:
-        Array with the completeness function interpolated onto input apparent 
-        magnitude grid.
+    Computes the completeness function based on effective volumes from the
+    NGDEEP survey. Uses data from Table 2 of arXiv:2306.06244 at z~9, normalized
+    by the largest effective volume, and linearly interpolates between magnitude
+    bins. Completeness is set to 0 at the 5-sigma limiting depth (30.4 mag).
+
+    Parameters
+    ----------
+    apparent_grid : NDArray
+        Array of apparent magnitudes on which to evaluate the completeness
+        function.
+
+    Returns
+    -------
+    NDArray
+        Array with the completeness function (0-1) interpolated onto the
+        input apparent magnitude grid.
+
+    References
+    ----------
+    .. [1] https://arxiv.org/pdf/2306.06244 (NGDEEP survey data)
     """
     survey_absolute_magnitudes = np.array([-21.1, -20.1, -19.1, -18.35, -17.85, -17.35])
     survey_apparent_magnitudes = (survey_absolute_magnitudes + 
@@ -130,10 +180,10 @@ def get_ngdeep_completeness(apparent_grid: NDArray) -> NDArray:
     effective_volumes = np.array([18700., 18500., 15800., 13100., 7770., 2520.]) # Mpc^3
   
     completeness = effective_volumes / np.amax(effective_volumes) 
-    # make sure completeness goes to 0 at 5 sigma depth 
+    # Set completeness to 0 at 5-sigma limiting depth (30.4 mag)
     apparent_magnitudes = np.append(survey_apparent_magnitudes, 30.4)
     completeness = np.append(completeness, 0.0)    
-    # extends values to min and max of the grid for the purpose of interpolation 
+    # Extend values to grid min/max for interpolation
     completeness = np.concatenate(([1.0], completeness, [0.0]))
     grid_min = np.amin(apparent_grid)
     grid_max = np.amax(apparent_grid)
@@ -144,18 +194,28 @@ def get_ngdeep_completeness(apparent_grid: NDArray) -> NDArray:
 
 
 def get_ceers_completeness(apparent_grid: NDArray) -> NDArray:
-    """ Estimates the completeness function for the CEERS survey.
+    """Estimate the completeness function for the CEERS survey.
     
-    Uses data from Table 4 of https://arxiv.org/pdf/2311.04279. Uses z~9 data,
-    normalizes by the largest volume, and linearly interpolates between mag bins.
-    Sets completeness to 0 at 5sigma limiting depth from Table 1.
-    
-    Args:
-        apparent_grid: Array of apparent magnitude to evaluate completeness
-          function on to.
-    Returns:
-        Array with the completeness function interpolated onto input apparent 
-        magnitude grid.
+    Computes the completeness function based on effective volumes from the
+    CEERS survey. Uses data from Table 4 of arXiv:2311.04279 at z~9, normalized
+    by the largest effective volume, and linearly interpolates between magnitude
+    bins. Completeness is set to 0 at the 5-sigma limiting depth (29.15 mag).
+
+    Parameters
+    ----------
+    apparent_grid : NDArray
+        Array of apparent magnitudes on which to evaluate the completeness
+        function.
+
+    Returns
+    -------
+    NDArray
+        Array with the completeness function (0-1) interpolated onto the
+        input apparent magnitude grid.
+
+    References
+    ----------
+    .. [1] https://arxiv.org/pdf/2311.04279 (CEERS survey data)
     """
     survey_absolute_magnitudes = np.array([-22.5, -22.0, -21.5, -21.0, -20.5, -20.0, -19.5, -19.0, -18.5])
     survey_apparent_magnitudes = (survey_absolute_magnitudes + 
@@ -163,16 +223,16 @@ def get_ceers_completeness(apparent_grid: NDArray) -> NDArray:
     effective_volumes = np.array([187000., 187000., 187000., 193000., 177000., 
                                   161000., 120000., 77900., 18600.]) # Mpc^3
     completeness = effective_volumes / np.amax(effective_volumes) 
-    # make sure completeness goes to 0 at 5 sigma depth 
+    # Set completeness to 0 at 5-sigma limiting depth (29.15 mag)
     apparent_magnitudes = np.append(survey_apparent_magnitudes, 29.15)
     completeness = np.append(completeness, 0.0)
-    # extends values to min and max of the grid for the purpose of interpolation 
+    # Extend values to grid min/max for interpolation
     completeness = np.concatenate(([1.0], completeness, [0.0]))
     grid_min = np.amin(apparent_grid)
     grid_max = np.amax(apparent_grid)
     apparent_magnitudes = np.concatenate(([grid_min], apparent_magnitudes, 
                                           [grid_max]))    
-    cf = np.interp(apparent_magnitude_grid, apparent_magnitudes, completeness)
+    cf = np.interp(apparent_grid, apparent_magnitudes, completeness)
     return cf
 
 
@@ -184,32 +244,46 @@ def get_data_pdf(
     load: bool = True,
     save: bool = True
 ) -> NDArray:
-    """ Computes the pdf for galaxy candidates from redshift uncertainties.
+    """Compute probability density functions for galaxy candidates from redshift uncertainties.
     
-    A probability density function for each galaxy candidate is computed assuming 
-    a two-sided normal distribution using the medians and one sigma uncertainties 
-    listed in https://arxiv.org/pdf/2306.06244 and https://arxiv.org/pdf/2311.04279. 
-    A lower limit on the redshift of the pdf is placed at z=8.5 to mimic the 
-    color cuts used in the selection of the high-z galaxy candidates after which
-    the pdfs are renormalized.
+    Computes a probability density function for each galaxy candidate assuming
+    a two-sided normal distribution using the median redshifts and one-sigma
+    uncertainties. A lower redshift limit at z=8.5 is applied to mimic color
+    cuts used in high-z galaxy candidate selection, after which the PDFs are
+    renormalized.
 
-    The pdfs are saved to file filename if save is True and will be loaded from the 
-    same file if load is True.
+    Parameters
+    ----------
+    observed_data : pd.DataFrame
+        DataFrame with columns:
+        - 'mf277w': apparent magnitudes
+        - 'z': median redshifts
+        - 'z_upper_err': one-sigma error above the median
+        - 'z_lower_err': one-sigma error below the median
+    apparent_grid : NDArray
+        Grid of apparent magnitudes on which the PDF is evaluated.
+    redshift_grid : NDArray
+        Grid of redshifts on which the PDF is evaluated.
+    filename : str
+        Filename to save/load the computed PDFs.
+    load : bool, optional
+        If True, loads pre-computed PDFs from filename. Default is True.
+    save : bool, optional
+        If True, saves the computed PDFs to filename. Default is True.
 
-    Args:
-        observed_data: Pandas DataFrame with columns containing the apparent 
-          magnitudes (mf277w), median redshifts (z), one sigma error above the 
-          median (z_upper_err), and one sigma error below the mean (z_lower_err).
-        apparent_grid: Grid of apparent magntiude on which the pdf is evaluated.
-        redshift_grid: Grid of redshifts on which the pdf is evaluated.
-        filename: Filename to save the the computed pdfs.
-        load: if True, loads the data from filename.
-        save: if True, saves the data to filename.
-    Returns:
-        Numpy array of the pdfs computed for each galaxy candidate, with shape 
-        (n_gal, n_mag, n_z) where n_gal is the number galaxies in observed_data,
-        n_mags is the length of the apparent_grid, and n_z is the length of 
-        redshift_grid.
+    Returns
+    -------
+    NDArray
+        Array of shape (n_gal, n_mag, n_z) containing PDFs for each galaxy
+        candidate, where:
+        - n_gal: number of galaxies in observed_data
+        - n_mag: length of apparent_grid
+        - n_z: length of redshift_grid
+
+    References
+    ----------
+    .. [1] https://arxiv.org/pdf/2306.06244 (NGDEEP)
+    .. [2] https://arxiv.org/pdf/2311.04279 (CEERS)
     """
     z_cutoff = 8.5 
     if load and path.isfile(filename):
@@ -231,7 +305,8 @@ def get_data_pdf(
             mag_pdf[idx] = 1.0
             mag_pdf = mag_pdf.reshape(-1, 1)
             
-            lower_idx = redshift_grid <= z # note, choice of <= is arbitrary!
+            # Two-sided normal: different sigmas for z < median and z >= median
+            lower_idx = redshift_grid <= z
             upper_idx = redshift_grid > z
             z_pdf = np.zeros_like(redshift_grid)
             norm = np.sqrt(2.0/np.pi)/(z_upper_err + z_lower_err)
@@ -241,10 +316,11 @@ def get_data_pdf(
             
             obs_pdf[i,:,:] = mag_pdf * z_pdf * dz 
  
-            cut_idx = redshift_grid < 8.5 # cutoff to mimic color cuts
+            # Apply z=8.5 cutoff to mimic color cuts used in candidate selection
+            cut_idx = redshift_grid < 8.5
             obs_pdf[i][:,cut_idx] = 0
             new_norm = np.sum(obs_pdf[i,:,:])
-            obs_pdf[i,:,:] = obs_pdf[i,:,:] / new_norm # renormalized so sums to 1
+            obs_pdf[i,:,:] = obs_pdf[i,:,:] / new_norm  # Renormalize
         if save:
             np.save(filename, obs_pdf)
     return obs_pdf
@@ -255,20 +331,33 @@ def load_data(
     reload: bool = True, 
     save: bool = True,
 ) -> pd.DataFrame:
-    """ Returns the data for one parameter combination. 
+    """Load data for one parameter combination from Galacticus HDF5 files.
     
-    Loads the 3 hdf5 files corresponding to different redshifts into arrays
-    of log halo mass, absolute magnitudes, apparent magnitudes, and redshifts.
+    Loads the three HDF5 files corresponding to redshifts z=8.0, 12.0, and 16.0
+    and combines them into a single DataFrame. Data can be cached to CSV for
+    faster subsequent loads.
 
-    Args:
-        data_directory: Path to the directory containing the hdf5 files for the
-          3 redshifts 
-        reload: if True, force reloads the data 
-        save: if True, saves the data to data_directory/data.csv
+    Parameters
+    ----------
+    data_directory : str
+        Path to the directory containing the HDF5 files (z8.0.hdf5, z12.0.hdf5,
+        z16.0.hdf5).
+    reload : bool, optional
+        If True, forces reload from HDF5 files even if CSV cache exists.
+        Default is True.
+    save : bool, optional
+        If True, saves the combined data to 'data_directory/data.csv' for
+        faster future loads. Default is True.
 
-    Returns:
-        Dataframe of galaxies where the columns contain the log halo mass, absolute
-        magnitude, apparent magnitude, and redshift of all the simulated galaxies.
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with columns:
+        - 'log_halo_mass': log10(halo mass) [Msun]
+        - 'apparent_magnitude': apparent magnitude
+        - 'absolute_magnitude': absolute magnitude
+        - 'redshift': redshift
+        - 'tree_weight': merger tree weight
     """ 
     data_columns= ['log_halo_mass', 'apparent_magnitude', 'absolute_magnitude', 'redshift', 'tree_weight']
     data_filename = path.join(data_directory, 'data.csv')
@@ -294,17 +383,37 @@ def get_binned_weights(
     load: bool = True,
     save: bool = True,
 ) -> NDArray:
-    """ Calculate binned merger tree weights.
+    """Calculate binned merger tree weights.
 
-    Args: 
-        logmh_bins: Array of bin edges for the log halo mass bins.
-        logmhs: Array of log halo masses for each galaxy.
-        weights: Array of merger tree weights for each galaxy.
-        load: if True, loads the data from data/binned_zgrid_weights.npy
-        save: if True, saves the data to data/binned_zgrid_weights.npy
+    Bins merger tree weights by halo mass for each redshift. The weights are
+    summed within each mass bin to produce a binned weight array.
+
+    Parameters
+    ----------
+    logmh_bins : NDArray
+        Array of bin edges for log halo mass bins.
+    logmhs : NDArray
+        Array of unique log halo masses (will be made unique if not already).
+    weights : NDArray
+        Array of shape (n_redshifts, n_halos) containing merger tree weights
+        for each halo at each redshift.
+    load : bool, optional
+        If True, loads pre-computed weights from 'data/binned_zgrid_weights.npy'.
+        Default is True.
+    save : bool, optional
+        If True, saves computed weights to 'data/binned_zgrid_weights.npy'.
+        Default is True.
         
-    Returns:
-        Array of binned merger tree weights.
+    Returns
+    -------
+    NDArray
+        Array of shape (n_redshifts, n_mass_bins) containing binned merger
+        tree weights.
+
+    Notes
+    -----
+    This function uses global variables `nz` and `n_mass_bins` which must be
+    defined in the module scope.
     """
     output_filename =  'data/binned_zgrid_weights.npy'
     if load and path.isfile(output_filename):
@@ -330,24 +439,45 @@ def get_probs(
     recompute: bool,
     save: bool=True,
 ) -> NDArray:
-    """Returns an array of probabilities for the galaxy-halo connection.
+    """Compute probability distributions for the galaxy-halo connection.
 
-    The pdf is determined by a normal distribution with mean and standard
-    deviation determined from the simulated data for each halo mass bin and 
-    redshift. The pdf is cutoff at a fraction of the min and max magnitudes to
-    prevent artificial upscatter of faint galaxies. The pdf is saved to file if
-    save is True. The output has shape (N_mag, N_z, N_mh).
+    Computes probability density functions (PDFs) for galaxy magnitudes as a
+    function of halo mass and redshift. The PDF is determined by a normal
+    distribution with mean and standard deviation from simulated data. The PDF
+    is cut off at fractions of the min/max magnitudes to prevent artificial
+    upscatter of faint galaxies.
 
-    Args:
-        mag_grid (ndarray): Magnitude grid.
-        stats (namedtuple): Stats calculated from the data.
-        data_directory (str): Directory to save data.
-        do_abs (bool): Flag to determine absolute magnitude.
-        recompute (bool): Flag to force recompute probabilities.
-        save (bool, optional): Flag to save probabilities. Defaults to True.
+    Parameters
+    ----------
+    magnitude_grid : NDArray
+        Grid of magnitudes (absolute or apparent) on which to evaluate PDFs.
+    stats : Stats
+        Namedtuple containing statistics (mean, sigma, min, max) calculated
+        from the simulated data. Can be None if recompute is False and file
+        exists.
+    data_directory : str
+        Directory where PDF files are saved/loaded.
+    do_abs : bool
+        If True, compute PDFs for absolute magnitudes; if False, for apparent
+        magnitudes.
+    recompute : bool
+        If True, forces recomputation even if PDF file exists.
+    save : bool, optional
+        If True, saves the computed PDFs to file. Default is True.
     
-    Returns:
-        ndarray: Array of probabilities.
+    Returns
+    -------
+    NDArray
+        Array of shape (n_mag, n_z, n_mass_bins) containing probability
+        distributions. PDFs are normalized to sum to 1 over the magnitude
+        dimension.
+
+    Notes
+    -----
+    - For absolute magnitudes: cutoff at 1.1 * min and 0.9 * max
+    - For apparent magnitudes: cutoff at 0.95 * min and 1.05 * max
+    - Uses global variables `nz` and `n_mass_bins` which must be defined in
+      module scope.
     """
     if do_abs:
         if stats is not None:
@@ -358,10 +488,8 @@ def get_probs(
             probability_min_magnitude = mins * 1.1 # absolute mags are negative
             probability_max_magnitude = maxs * 0.9
         probs_filename = path.join(data_directory, 'absolute_pdf.npy')
-        # we need to cutoff pdf towards the faint end as distribution becomes 
-        # non-gaussian to prevent artificial upscatter of faint galaxies 
-        # (ideally would be fixed by using some skewed distribution)
-        # values chosen based on empirical testing 
+        # Cutoff PDF at faint end to prevent artificial upscatter
+        # (distribution becomes non-Gaussian; values from empirical testing)
         
     else:
         if stats is not None:
@@ -372,10 +500,8 @@ def get_probs(
             probability_min_magnitude = mins * 0.95
             probability_max_magnitude = maxs * 1.05 
         probs_filename = path.join(data_directory, 'apparent_pdf.npy')
-        # we need to cutoff pdf towards the faint end as distribution becomes 
-        # non-gaussian to prevent artificial upscatter of faint galaxies 
-        # (ideally would be fixed by using some skewed distribution)
-        # values chosen based on empirical testing 
+        # Cutoff PDF at faint end to prevent artificial upscatter
+        # (distribution becomes non-Gaussian; values from empirical testing) 
         
     if path.isfile(probs_filename) and not recompute:
         pdfs = np.load(probs_filename)
@@ -389,7 +515,7 @@ def get_probs(
             idx = (mag > probability_max_magnitude) | (mag < probability_min_magnitude)
             pdfs[i][idx] = 0
 
-        # have to renormalize after cutting off the pdf
+        # Renormalize after cutting off the PDF
         norm = np.sum(pdfs, axis=0) 
         norm = norm.reshape(1, nz, n_mass_bins)        
         pdfs = (pdfs / norm)
@@ -407,45 +533,59 @@ def get_skewed_probs(
     recompute: bool,
     save: bool=True,
 ) -> NDArray:
-    """Returns an array of probabilities for the galaxy-halo connection.
+    """Compute skewed probability distributions for the galaxy-halo connection.
 
-    The pdf is determined by a normal distribution with mean and standard
-    deviation determined from the simulated data for each halo mass bin and 
-    redshift. The pdf is cutoff at a fraction of the min and max magnitudes to
-    prevent artificial upscatter of faint galaxies. The pdf is saved to file if
-    save is True. The output has shape (N_mag, N_z, N_mh).
+    Similar to `get_probs`, but uses a two-sided normal distribution (skewed
+    PDF) with different standard deviations on the left and right sides of the
+    median. This better captures asymmetric distributions in the galaxy-halo
+    connection.
 
-    Args:
-        mag_grid (ndarray): Magnitude grid.
-        stats (namedtuple): Stats calculated from the data.
-        data_directory (str): Directory to save data.
-        do_abs (bool): Flag to determine absolute magnitude.
-        recompute (bool): Flag to force recompute probabilities.
-        save (bool, optional): Flag to save probabilities. Defaults to True.
+    Parameters
+    ----------
+    magnitude_grid : NDArray
+        Grid of magnitudes (absolute or apparent) on which to evaluate PDFs.
+    stats : Stats
+        Namedtuple containing statistics (median, sigma_left, sigma_right,
+        min, max) calculated from the simulated data. Can be None if recompute
+        is False and file exists.
+    data_directory : str
+        Directory where PDF files are saved/loaded.
+    do_abs : bool
+        If True, compute PDFs for absolute magnitudes; if False, for apparent
+        magnitudes.
+    recompute : bool
+        If True, forces recomputation even if PDF file exists.
+    save : bool, optional
+        If True, saves the computed PDFs to file. Default is True.
     
-    Returns:
-        ndarray: Array of probabilities.
+    Returns
+    -------
+    NDArray
+        Array of shape (n_mag, n_z, n_mass_bins) containing skewed probability
+        distributions. PDFs are normalized to sum to 1 over the magnitude
+        dimension.
+
+    Notes
+    -----
+    - Uses `two_sided_normal_pdf` for the skewed distribution
+    - Cutoff fractions same as `get_probs`
+    - Uses global variables `nz` and `n_mass_bins`
     """
     if do_abs:
-        # print(stats)
-        if stats is not None: # temp 
+        if stats is not None: 
             mu = stats.absolute_median
             sigma_L = stats.absolute_sigma_left
             sigma_R = stats.absolute_sigma_right
             probability_min_magnitude = stats.absolute_min * 1.1
             probability_max_magnitude = stats.absolute_max * 0.9
-            # grid = absolute_magnitude_grid
-            # nmuv = nabs
         probs_filename = path.join(data_directory, 'skewed_absolute_pdf.npy')
     else:
-        if stats is not None: # temp 
+        if stats is not None:
             mu = stats.apparent_median
             sigma_L = stats.apparent_sigma_left
             sigma_R = stats.apparent_sigma_right
-            # grid = apparent_magnitude_grid
             probability_min_magnitude = stats.apparent_min * 0.95
             probability_max_magnitude = stats.apparent_max * 1.05 
-            # nmuv = napp
         probs_filename = path.join(data_directory, 'skewed_apparent_pdf.npy')
     if path.isfile(probs_filename) and not recompute:
         pdfs = np.load(probs_filename)
@@ -453,12 +593,13 @@ def get_skewed_probs(
         pdfs = np.zeros((len(magnitude_grid), nz, n_mass_bins))
         for i in range(nz):
             for j in range(n_mass_bins):
-                pdfs[:,i,j] = two_sided_normal_pdf(magnitude_grid, mu[i,j], sigma_L[i,j], sigma_R[i,j])
-        # if do_abs:
+                pdfs[:,i,j] = two_sided_normal_pdf(magnitude_grid, mu[i,j], 
+                                                   sigma_L[i,j], sigma_R[i,j])
+        # Apply magnitude cutoffs
         for i, mag in enumerate(magnitude_grid):
             idx = (mag > probability_max_magnitude) | (mag < probability_min_magnitude)
             pdfs[i][idx] = 0
-        # could be built into two_sided_normal_pdf but just going to do it here as an explicit check
+        # Renormalize after cutting off the PDF
         norm = np.sum(pdfs, axis=0) 
         norm = norm.reshape(1, nz, n_mass_bins)        
         pdfs = (pdfs / norm)
@@ -476,17 +617,35 @@ def get_uvlf(
     do_skewed: bool,
     recompute: bool,
 ) -> NDArray:
-    """ Returns the UVLF from the g-h connection pdfs and binned weights.
+    """Compute the UV luminosity function (UVLF) from galaxy-halo PDFs and weights.
 
-    Args: 
-        probs: Array of probabilities.
-        binned_weights: Array of binned weights.
-        data_directory: Directory to save data.
-        do_abs: Flag to determine absolute magnitude.
-        do_skewed: Flag to prepend skewed to output fn
-        recompute: Flag to force recompute probabilities.
-    Returns:
-        Array of the UVLF.
+    Computes the UV luminosity function by convolving the galaxy-halo connection
+    probability distributions with the binned merger tree weights. The UVLF
+    represents the number density of galaxies as a function of magnitude and
+    redshift.
+
+    Parameters
+    ----------
+    probs : NDArray
+        Array of shape (n_mag, n_z, n_mass_bins) containing probability
+        distributions from `get_probs` or `get_skewed_probs`.
+    binned_weights : NDArray
+        Array of shape (n_z, n_mass_bins) containing binned merger tree weights.
+    data_directory : str
+        Directory where UVLF files are saved/loaded.
+    do_abs : bool
+        If True, compute UVLF for absolute magnitudes; if False, for apparent
+        magnitudes.
+    do_skewed : bool
+        If True, uses 'skewed_' prefix in output filename.
+    recompute : bool
+        If True, forces recomputation even if UVLF file exists.
+
+    Returns
+    -------
+    NDArray
+        Array of shape (n_mag, n_z) containing the UV luminosity function.
+        Units depend on the input weights and magnitude grid spacing.
     """  
     if do_skewed:
         prefix = 'skewed_'
@@ -504,35 +663,38 @@ def get_uvlf(
     return uvlf
 
 
-# def interpolate_uvlf(uvlf, time): 
-#     # should I do this on log phi or phi and on time or z
-    
-#     pass
-
-
-# def get_binned_uvlf(muvs, weights):
-#     bin_width = 0.5
-#     bins = np.arange(-24, -14, bin_width)
-#     bin_centers = bins[:-1]+bin_width/2.0
-#     left = bins[:-1]
-#     right = bins[1:]
-#     uvlf = np.zeros_like(bin_centers)
-#     for i in range(len(bins)-1):
-#         idx = (muvs < right[i]) & (muvs >= left[i])
-#         uvlf[i] = np.sum(weights[idx]) / bin_width
-#     return bin_centers, uvlf
 
 
 def calculate_likelihood(apparent_uvlf: NDArray) -> float:
-    """ Calculates the likelihood function given the UVLF.
+    """Calculate the log-likelihood function given the apparent magnitude UVLF.
     
-    See https://arxiv.org/abs/2410.11680 for details. Note that input must be
-    the UVLF in terms of apparent magnitude, not absolute.
-    
-    Args:
-        apparent_uvlf: UVLF as a function of apparent magnitude and redshift
-    Returns:
-        log_likelihood (float): log of the likelihood (float)
+    Computes the Poisson log-likelihood comparing the model UVLF predictions
+    with observed galaxy counts from NGDEEP and CEERS surveys. The likelihood
+    accounts for both the expected number of galaxies and the probability of
+    observing each candidate galaxy given redshift uncertainties.
+
+    Parameters
+    ----------
+    apparent_uvlf : NDArray
+        UV luminosity function as a function of apparent magnitude and redshift.
+        Shape should be (n_mag, n_z).
+
+    Returns
+    -------
+    float
+        Log-likelihood value. Higher values indicate better agreement with
+        observations.
+
+    Notes
+    -----
+    - Only uses redshifts >= 8.5 (z_cutoff)
+    - Uses global variables: redshift_grid, ngdeep_pdf, ceers_pdf,
+      ngdeep_effective_volume, ceers_effective_volume
+    - See arXiv:2410.11680 for theoretical details
+
+    References
+    ----------
+    .. [1] https://arxiv.org/abs/2410.11680
     """
     z_cutoff = 8.5
     zidx = redshift_grid >= z_cutoff
@@ -604,7 +766,7 @@ z_volumes = (cosmo.comoving_volume(redshift_grid+dz/2.0)-cosmo.comoving_volume(r
 
 ngdeep_cf = get_ngdeep_completeness(apparent_magnitude_grid)
 ngdeep_area = 3.3667617763401435e-08 # 5 arcmin^2 as a fraction of the sky
-ngdeep_volumes = ngdeep_area * z_volumes # Differential comoving volume per redshift per steradian at each input redshift.
+ngdeep_volumes = ngdeep_area * z_volumes  # Differential comoving volume per redshift
 ngdeep_effective_volume = ngdeep_cf.reshape(-1,1)*ngdeep_volumes.reshape(1,-1)
 ngdeep_effective_volume = np.abs(ngdeep_effective_volume)
 
@@ -620,14 +782,51 @@ ngdeep_pdf = np.abs(get_data_pdf(ngdeep_data, apparent_magnitude_grid, redshift_
 ceers_pdf = np.abs(get_data_pdf(ceers_data, apparent_magnitude_grid, redshift_grid, ceers_pdf_filename, True))
 
 
-def two_sided_normal_pdf(x, mu, sigma_L, sigma_R):
+def two_sided_normal_pdf(x: NDArray, mu: float, sigma_L: float, sigma_R: float) -> NDArray:
+    """Compute a two-sided normal (skewed) probability density function.
+    
+    A PDF with different standard deviations on the left and right sides of
+    the mean, allowing for asymmetric distributions.
+
+    Parameters
+    ----------
+    x : NDArray
+        Points at which to evaluate the PDF.
+    mu : float
+        Mean/median of the distribution.
+    sigma_L : float
+        Standard deviation for x < mu (left side).
+    sigma_R : float
+        Standard deviation for x >= mu (right side).
+
+    Returns
+    -------
+    NDArray
+        Probability density values at each point in x.
+    """
     return np.where(x < mu,
                     scipy.stats.norm.pdf(x, loc=mu, scale=sigma_L),
                     scipy.stats.norm.pdf(x, loc=mu, scale=sigma_R))
 
 
-# Define the negative log-likelihood function
-def neg_log_likelihood(params, x):
+def neg_log_likelihood(params: tuple, x: NDArray) -> float:
+    """Negative log-likelihood for fitting a two-sided normal distribution.
+    
+    Used as an objective function for optimization when fitting skewed
+    distributions to data.
+
+    Parameters
+    ----------
+    params : tuple
+        Parameters (mu, sigma_L, sigma_R) of the two-sided normal distribution.
+    x : NDArray
+        Data points to fit.
+
+    Returns
+    -------
+    float
+        Negative log-likelihood value (to be minimized).
+    """
     mu, sigma_L, sigma_R = params
     sigma_L, sigma_R = abs(sigma_L), abs(sigma_R)  # Ensure positive values
     
@@ -636,6 +835,41 @@ def neg_log_likelihood(params, x):
 
 
 def get_skewed_stats(data: pd.DataFrame) -> Stats:
+    """Calculate skewed statistics (medians and asymmetric sigmas) from galaxy data.
+    
+    Computes statistics for the galaxy-halo connection using a two-sided normal
+    distribution. For each halo mass bin and redshift, fits a skewed distribution
+    to the magnitude data and extracts median, left/right standard deviations,
+    and min/max values. Interpolates between the three sampled redshifts (z=8,
+    12, 16) to the full redshift grid.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        DataFrame containing galaxy data with columns: 'redshift',
+        'log_halo_mass', 'absolute_magnitude', 'apparent_magnitude'.
+
+    Returns
+    -------
+    Stats
+        Namedtuple containing:
+        - absolute_medians: (nz, n_mass_bins) array
+        - absolute_sigma_lefts: (nz, n_mass_bins) array
+        - absolute_sigma_rights: (nz, n_mass_bins) array
+        - absolute_mins: (nz, n_mass_bins) array
+        - absolute_maxs: (nz, n_mass_bins) array
+        - apparent_medians: (nz, n_mass_bins) array
+        - apparent_sigma_lefts: (nz, n_mass_bins) array
+        - apparent_sigma_rights: (nz, n_mass_bins) array
+        - apparent_mins: (nz, n_mass_bins) array
+        - apparent_maxs: (nz, n_mass_bins) array
+
+    Notes
+    -----
+    - Uses scipy.optimize.minimize with L-BFGS-B method to fit distributions
+    - Interpolates in cosmic time (age) rather than redshift
+    - Uses global variables: nz, n_mass_bins, Mh_bins, t_grid, t8, t12, t16
+    """
     sampled_redshifts = np.unique(data['redshift'])[::-1]
     sampled_nz = len(sampled_redshifts)
     sampled_absolute_medians = np.zeros((sampled_nz, n_mass_bins))
@@ -726,8 +960,39 @@ def get_skewed_stats(data: pd.DataFrame) -> Stats:
 
 
 def get_stats(data: pd.DataFrame) -> Stats:
-    """ Returns dataframe containing stats calculated from the data.
+    """Calculate statistics (means and standard deviations) from galaxy data.
+    
+    Computes statistics for the galaxy-halo connection using normal distributions.
+    For each halo mass bin and redshift, calculates mean, standard deviation,
+    min, and max for both absolute and apparent magnitudes. Interpolates
+    between the three sampled redshifts (z=8, 12, 16) to the full redshift grid.
 
+    Parameters
+    ----------
+    data : pd.DataFrame
+        DataFrame containing galaxy data with columns: 'redshift',
+        'log_halo_mass', 'absolute_magnitude', 'apparent_magnitude'.
+
+    Returns
+    -------
+    Stats
+        Namedtuple containing:
+        - absolute_means: (nz, n_mass_bins) array
+        - absolute_sigmas: (nz, n_mass_bins) array
+        - absolute_mins: (nz, n_mass_bins) array
+        - absolute_maxs: (nz, n_mass_bins) array
+        - apparent_means: (nz, n_mass_bins) array
+        - apparent_sigmas: (nz, n_mass_bins) array
+        - apparent_mins: (nz, n_mass_bins) array
+        - apparent_maxs: (nz, n_mass_bins) array
+
+    Notes
+    -----
+    - Interpolates in cosmic time (age) rather than redshift
+    - Apparent magnitude means are computed from absolute means using distance
+      modulus and k-correction
+    - Uses global variables: nz, n_mass_bins, Mh_bins, t_grid, t8, t12, t16,
+      redshift_grid, cosmo
     """
     sampled_redshifts = np.unique(data['redshift'])[::-1]
     sampled_nz = len(sampled_redshifts)
@@ -747,14 +1012,6 @@ def get_stats(data: pd.DataFrame) -> Stats:
             left = Mh_bins[j]
             right = Mh_bins[j+1]
             bidx = (z_lmh > left) & (z_lmh < right)
-            # if np.sum(bidx)==0:
-            #     sampled_absolute_means[i,j] = -3
-            #     sampled_absolute_stds[i,j] = 1
-            #     sampled_absolute_maxs[i,j] = -1
-            #     sampled_absolute_mins[i,j] = -5
-            #     sampled_apparent_maxs[i,j] = 45
-            #     sampled_apparent_mins[i,j] = 35
-            # else:
             sampled_absolute_means[i,j] = np.average(z_abs[bidx])
             sampled_absolute_stds[i,j] = np.std(z_abs[bidx])
             sampled_absolute_maxs[i,j] = np.amax(z_abs[bidx])
@@ -785,11 +1042,42 @@ def get_stats(data: pd.DataFrame) -> Stats:
     return stats
 
 
-def evaluate_likelihood(i, data_directory, skewed, reload, recompute):
-    """ Returns the log likelihood for a given parameter combination. 
+def evaluate_likelihood(i: int, data_directory: str, skewed: bool, 
+                       reload: bool, recompute: bool) -> float:
+    """Evaluate the log-likelihood for a given parameter combination.
     
-    If any error is thrown during the calculation (e.g. data is not available), 
-    the function will return np.nan and the error will be prined to the console."""
+    Main function that orchestrates the likelihood calculation: loads data,
+    computes statistics, generates PDFs, computes UVLF, and evaluates the
+    likelihood comparing model predictions with observations.
+
+    Parameters
+    ----------
+    i : int
+        Parameter index (for identification/debugging).
+    data_directory : str
+        Directory containing the Galacticus output files for this parameter
+        combination.
+    skewed : bool
+        If True, uses skewed (two-sided normal) distributions; if False, uses
+        standard normal distributions.
+    reload : bool
+        If True, forces reload of data from HDF5 files.
+    recompute : bool
+        If True, forces recomputation of PDFs and UVLF even if cached files
+        exist.
+
+    Returns
+    -------
+    float
+        Log-likelihood value. Returns np.nan if an error occurs during
+        calculation (e.g., data not available).
+
+    Notes
+    -----
+    - Computes both absolute and apparent UVLFs (absolute is for plotting)
+    - Uses global variables: absolute_magnitude_grid, apparent_magnitude_grid,
+      binned_weights, dabs
+    """
     # try:
     data = load_data(data_directory, reload)
     uvlf_filename = path.join(data_directory, 'apparent_uvlf.npy')
@@ -806,7 +1094,7 @@ def evaluate_likelihood(i, data_directory, skewed, reload, recompute):
             abs_probs = get_probs(absolute_magnitude_grid, stats, data_directory, True, recompute)
             app_probs = get_probs(apparent_magnitude_grid, stats, data_directory, False, recompute)
 
-    # the absolute uvlf is not used in the calculation but is computed for plotting purposes so it is computed here
+    # Absolute UVLF is computed for plotting purposes (not used in likelihood)
     abs_uvlf = get_uvlf(abs_probs, binned_weights, data_directory, True, skewed, recompute)/dabs
     app_uvlf = get_uvlf(app_probs, binned_weights, data_directory, False, skewed, recompute)
     loglike = calculate_likelihood(app_uvlf)
@@ -817,7 +1105,37 @@ def evaluate_likelihood(i, data_directory, skewed, reload, recompute):
     return loglike
 
 
-def get_astro_params(dirname, initial, final):
+def get_astro_params(dirname: str, initial: int, final: int) -> tuple:
+    """Extract astrophysical parameters from Galacticus XML files.
+    
+    Reads parameter values from the XML input files used for Galacticus
+    simulations. Extracts four key parameters: outflow velocity, outflow
+    alpha, star formation timescale, and star formation alpha.
+
+    Parameters
+    ----------
+    dirname : str
+        Base directory name pattern (e.g., 'paper_params').
+    initial : int
+        Starting parameter index.
+    final : int
+        Ending parameter index (exclusive).
+
+    Returns
+    -------
+    tuple
+        Tuple of four lists:
+        - outflow_velocities: list of outflow velocity parameters
+        - outflow_alphas: list of outflow alpha parameters
+        - sfr_alphas: list of star formation alpha parameters
+        - sfr_timescales: list of star formation timescale parameters
+
+    Notes
+    -----
+    - Hardcoded base path: '/carnegie/nobackup/users/gdriskell/jwst_data/'
+    - Reads from z8.0.xml file in each parameter directory
+    - XML paths are hardcoded for specific Galacticus parameter locations
+    """
     base = '/carnegie/nobackup/users/gdriskell/jwst_data/'
     Vout_xml = 'nodeOperator/nodeOperator/stellarFeedbackOutflows/stellarFeedbackOutflows/velocityCharacteristic'
     alphaOut_xml = 'nodeOperator/nodeOperator/stellarFeedbackOutflows/stellarFeedbackOutflows/exponent'
@@ -842,13 +1160,64 @@ def get_astro_params(dirname, initial, final):
     return outflow_velocities, outflow_alphas, sfr_alphas, sfr_timescales
 
 
-def run(dirname, base, i, skewed, reload, recompute):
+def run(dirname: str, base: str, i: int, skewed: bool, 
+        reload: bool, recompute: bool) -> float:
+    """Wrapper function to evaluate likelihood for a single parameter combination.
+    
+    Convenience function that constructs the data directory path and calls
+    evaluate_likelihood. Used for parallel processing with joblib.
+
+    Parameters
+    ----------
+    dirname : str
+        Base directory name pattern (e.g., 'paper_params').
+    base : str
+        Base path to data directories.
+    i : int
+        Parameter index.
+    skewed : bool
+        Whether to use skewed distributions.
+    reload : bool
+        Whether to force reload of data.
+    recompute : bool
+        Whether to force recomputation of PDFs/UVLF.
+
+    Returns
+    -------
+    float
+        Log-likelihood value.
+    """
     data_directory = path.join(base, dirname+f'_p{i}/')
     loglike = evaluate_likelihood(i, data_directory, skewed, reload, recompute)
     return loglike
 
 
-def save_results(loglikes, initial, final, dirname, outfilename):
+def save_results(loglikes: list, initial: int, final: int, 
+                 dirname: str, outfilename: str) -> None:
+    """Save likelihood results to CSV file.
+    
+    Combines log-likelihood values with their corresponding astrophysical
+    parameters and saves to a CSV file. Results are sorted by log-likelihood
+    (descending) and include both log-likelihood and likelihood (exp of log).
+
+    Parameters
+    ----------
+    loglikes : list
+        List of log-likelihood values for each parameter combination.
+    initial : int
+        Starting parameter index.
+    final : int
+        Ending parameter index (inclusive).
+    dirname : str
+        Base directory name pattern (e.g., 'paper_params').
+    outfilename : str
+        Output filename (without .csv extension). If empty, uses dirname.
+
+    Returns
+    -------
+    None
+        Saves results to CSV file and prints top 10 results to console.
+    """
     (outflow_velocities, outflow_alphas, sfr_alphas, 
             sfr_timescales) = get_astro_params(dirname, initial, final+1)
     idxs = list(range(initial, final+1))
@@ -872,7 +1241,7 @@ def save_results(loglikes, initial, final, dirname, outfilename):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="")
+    parser = ArgumentParser(description="Analyze JWST simulated data from Galacticus")
     parser.add_argument("dirname", help="Path to data directory")
     parser.add_argument("--base", type=str,  help="Base directory for data files")
     parser.add_argument("--outfilename", type=str, default='', help="Output filename")

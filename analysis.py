@@ -21,17 +21,90 @@ import pandas as pd
 import xml.etree.ElementTree as ET
 from joblib import Parallel, delayed
 from numpy.typing import NDArray
-from collections import namedtuple
+from dataclasses import dataclass
 import scipy
 import scipy.stats
 import scipy.optimize
 from time import time
 
 
-# Namedtuple for storing statistics calculated from the data
-fields = ['absolute_mean', 'absolute_sigma', 'absolute_min', 'absolute_max', 
-        'apparent_mean', 'apparent_sigma', 'apparent_min', 'apparent_max']
-Stats = namedtuple('Stats', fields)
+@dataclass
+class Stats:
+    """Statistics for the galaxy-halo connection.
+    
+    Stores statistical properties (mean/sigma, min, max) for both absolute
+    and apparent magnitudes as a function of halo mass and redshift.
+    
+    Attributes
+    ----------
+    absolute_mean : NDArray
+        Mean absolute magnitude, shape (nz, n_mass_bins).
+    absolute_sigma : NDArray
+        Standard deviation of absolute magnitude, shape (nz, n_mass_bins).
+    absolute_min : NDArray
+        Minimum absolute magnitude, shape (nz, n_mass_bins).
+    absolute_max : NDArray
+        Maximum absolute magnitude, shape (nz, n_mass_bins).
+    apparent_mean : NDArray
+        Mean apparent magnitude, shape (nz, n_mass_bins).
+    apparent_sigma : NDArray
+        Standard deviation of apparent magnitude, shape (nz, n_mass_bins).
+    apparent_min : NDArray
+        Minimum apparent magnitude, shape (nz, n_mass_bins).
+    apparent_max : NDArray
+        Maximum apparent magnitude, shape (nz, n_mass_bins).
+    """
+    absolute_mean: NDArray
+    absolute_sigma: NDArray
+    absolute_min: NDArray
+    absolute_max: NDArray
+    apparent_mean: NDArray
+    apparent_sigma: NDArray
+    apparent_min: NDArray
+    apparent_max: NDArray
+
+
+@dataclass
+class SkewedStats:
+    """Skewed statistics for the galaxy-halo connection.
+    
+    Stores statistical properties using medians and asymmetric standard deviations
+    (left and right) for both absolute and apparent magnitudes. Used for
+    two-sided normal distributions that better capture asymmetric distributions.
+    
+    Attributes
+    ----------
+    absolute_median : NDArray
+        Median absolute magnitude, shape (nz, n_mass_bins).
+    absolute_sigma_left : NDArray
+        Standard deviation for absolute magnitude below median, shape (nz, n_mass_bins).
+    absolute_sigma_right : NDArray
+        Standard deviation for absolute magnitude above median, shape (nz, n_mass_bins).
+    absolute_min : NDArray
+        Minimum absolute magnitude, shape (nz, n_mass_bins).
+    absolute_max : NDArray
+        Maximum absolute magnitude, shape (nz, n_mass_bins).
+    apparent_median : NDArray
+        Median apparent magnitude, shape (nz, n_mass_bins).
+    apparent_sigma_left : NDArray
+        Standard deviation for apparent magnitude below median, shape (nz, n_mass_bins).
+    apparent_sigma_right : NDArray
+        Standard deviation for apparent magnitude above median, shape (nz, n_mass_bins).
+    apparent_min : NDArray
+        Minimum apparent magnitude, shape (nz, n_mass_bins).
+    apparent_max : NDArray
+        Maximum apparent magnitude, shape (nz, n_mass_bins).
+    """
+    absolute_median: NDArray
+    absolute_sigma_left: NDArray
+    absolute_sigma_right: NDArray
+    absolute_min: NDArray
+    absolute_max: NDArray
+    apparent_median: NDArray
+    apparent_sigma_left: NDArray
+    apparent_sigma_right: NDArray
+    apparent_min: NDArray
+    apparent_max: NDArray
 
 rng = np.random.default_rng()
 
@@ -452,7 +525,7 @@ def get_probs(
     magnitude_grid : NDArray
         Grid of magnitudes (absolute or apparent) on which to evaluate PDFs.
     stats : Stats
-        Namedtuple containing statistics (mean, sigma, min, max) calculated
+        Dataclass instance containing statistics (mean, sigma, min, max) calculated
         from the simulated data. Can be None if recompute is False and file
         exists.
     data_directory : str
@@ -527,7 +600,7 @@ def get_probs(
 
 def get_skewed_probs(
     magnitude_grid: NDArray, 
-    stats: Stats, 
+    stats: SkewedStats, 
     data_directory: str, 
     do_abs: bool, 
     recompute: bool,
@@ -544,8 +617,8 @@ def get_skewed_probs(
     ----------
     magnitude_grid : NDArray
         Grid of magnitudes (absolute or apparent) on which to evaluate PDFs.
-    stats : Stats
-        Namedtuple containing statistics (median, sigma_left, sigma_right,
+    stats : SkewedStats
+        Dataclass containing statistics (median, sigma_left, sigma_right,
         min, max) calculated from the simulated data. Can be None if recompute
         is False and file exists.
     data_directory : str
@@ -834,7 +907,7 @@ def neg_log_likelihood(params: tuple, x: NDArray) -> float:
     return -np.sum(np.log(likelihoods + 1e-10)) 
 
 
-def get_skewed_stats(data: pd.DataFrame) -> Stats:
+def get_skewed_stats(data: pd.DataFrame) -> SkewedStats:
     """Calculate skewed statistics (medians and asymmetric sigmas) from galaxy data.
     
     Computes statistics for the galaxy-halo connection using a two-sided normal
@@ -851,18 +924,18 @@ def get_skewed_stats(data: pd.DataFrame) -> Stats:
 
     Returns
     -------
-    Stats
-        Namedtuple containing:
-        - absolute_medians: (nz, n_mass_bins) array
-        - absolute_sigma_lefts: (nz, n_mass_bins) array
-        - absolute_sigma_rights: (nz, n_mass_bins) array
-        - absolute_mins: (nz, n_mass_bins) array
-        - absolute_maxs: (nz, n_mass_bins) array
-        - apparent_medians: (nz, n_mass_bins) array
-        - apparent_sigma_lefts: (nz, n_mass_bins) array
-        - apparent_sigma_rights: (nz, n_mass_bins) array
-        - apparent_mins: (nz, n_mass_bins) array
-        - apparent_maxs: (nz, n_mass_bins) array
+    SkewedStats
+        Dataclass instance containing:
+        - absolute_median: (nz, n_mass_bins) array
+        - absolute_sigma_left: (nz, n_mass_bins) array
+        - absolute_sigma_right: (nz, n_mass_bins) array
+        - absolute_min: (nz, n_mass_bins) array
+        - absolute_max: (nz, n_mass_bins) array
+        - apparent_median: (nz, n_mass_bins) array
+        - apparent_sigma_left: (nz, n_mass_bins) array
+        - apparent_sigma_right: (nz, n_mass_bins) array
+        - apparent_min: (nz, n_mass_bins) array
+        - apparent_max: (nz, n_mass_bins) array
 
     Notes
     -----
@@ -954,8 +1027,18 @@ def get_skewed_stats(data: pd.DataFrame) -> Stats:
         apparent_maxs[:,j] = np.interp(t_grid, sampled_times, sampled_apparent_maxs[:,j])
         apparent_mins[:,j] = np.interp(t_grid, sampled_times, sampled_apparent_mins[:,j])
 
-    stats = Stats(absolute_medians, absolute_sigma_lefts, absolute_sigma_rights, absolute_mins, absolute_maxs,
-                    apparent_medians, apparent_sigma_lefts, apparent_sigma_rights, apparent_mins, apparent_maxs)
+    stats = SkewedStats(
+        absolute_median=absolute_medians,
+        absolute_sigma_left=absolute_sigma_lefts,
+        absolute_sigma_right=absolute_sigma_rights,
+        absolute_min=absolute_mins,
+        absolute_max=absolute_maxs,
+        apparent_median=apparent_medians,
+        apparent_sigma_left=apparent_sigma_lefts,
+        apparent_sigma_right=apparent_sigma_rights,
+        apparent_min=apparent_mins,
+        apparent_max=apparent_maxs
+    )
     return stats
 
 
@@ -976,7 +1059,7 @@ def get_stats(data: pd.DataFrame) -> Stats:
     Returns
     -------
     Stats
-        Namedtuple containing:
+        Dataclass instance containing:
         - absolute_means: (nz, n_mass_bins) array
         - absolute_sigmas: (nz, n_mass_bins) array
         - absolute_mins: (nz, n_mass_bins) array
@@ -1037,8 +1120,16 @@ def get_stats(data: pd.DataFrame) -> Stats:
     shift = cosmo.distmod(redshift_grid).value-2.5*np.log10(1.+redshift_grid)
     apparent_means = absolute_means + shift.reshape(-1,1)
     apparent_sigmas = absolute_sigmas.copy()
-    stats = Stats(absolute_means, absolute_sigmas, absolute_mins, absolute_maxs,
-                    apparent_means, apparent_sigmas, apparent_mins, apparent_maxs)
+    stats = Stats(
+        absolute_mean=absolute_means,
+        absolute_sigma=absolute_sigmas,
+        absolute_min=absolute_mins,
+        absolute_max=absolute_maxs,
+        apparent_mean=apparent_means,
+        apparent_sigma=apparent_sigmas,
+        apparent_min=apparent_mins,
+        apparent_max=apparent_maxs
+    )
     return stats
 
 

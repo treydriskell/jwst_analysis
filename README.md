@@ -23,7 +23,7 @@ The repository processes simulated galaxy data from Galacticus simulations, perf
 
 1. Clone this repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/treydriskell/jwst_analysis.git
    cd jwst_analysis
    ```
 

@@ -1,3 +1,12 @@
+"""
+Plot magnitude-redshift data with confidence intervals.
+
+This module creates plots showing galaxy magnitude-redshift distributions
+with confidence intervals computed from the posterior probability
+distributions. Used to visualize the redshift uncertainties in the
+observational data.
+"""
+
 import numpy as np
 import os
 import pandas as pd
@@ -22,7 +31,24 @@ mpl.rcParams['font.serif'] = ['Times New Roman']
 mpl.rcParams['mathtext.fontset'] = 'cm'
 
 
-def get_ci(pdf,frac):
+def get_ci(pdf: np.ndarray, frac: float) -> tuple:
+    """Extract confidence interval contours from 2D probability distribution.
+
+    Computes confidence interval contours by sorting probabilities and
+    finding the region containing the specified fraction of probability mass.
+
+    Parameters
+    ----------
+    pdf : np.ndarray
+        2D probability distribution array (magnitude, redshift).
+    frac : float
+        Fraction of probability mass to include (e.g., 0.68 for 1-sigma).
+
+    Returns
+    -------
+    tuple
+        Tuple containing contour information (maxes, mins, zs) for plotting.
+    """
     flat_zz = zz.flatten()
     flat_mm = mm.flatten()
     flat_pdf = pdf.flatten()

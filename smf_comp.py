@@ -1,3 +1,11 @@
+"""
+Compare stellar mass functions with observational data.
+
+This module generates plots comparing simulated stellar mass functions
+with observational data from various surveys. Used for validation and
+comparison of the galaxy formation model.
+"""
+
 import h5py
 import numpy as np
 import os.path as path
@@ -24,7 +32,21 @@ mpl.rcParams['mathtext.fontset'] = 'cm'
 global cosmo
 cosmo = FlatLambdaCDM(H0=68.000, Om0=0.307, Tcmb0=2.72548, Ob0=0.04850)
 
-def get_Muv_from_hdf5(outfile):
+def get_Muv_from_hdf5(outfile) -> tuple:
+    """Extract stellar mass and halo mass data from Galacticus HDF5 file.
+
+    Parameters
+    ----------
+    outfile : h5py.File
+        Open HDF5 file object from Galacticus.
+
+    Returns
+    -------
+    tuple
+        Tuple containing:
+        - data: Array of shape (n_galaxies, 2) with [log10(halo_mass), stellar_mass]
+        - treeWeights: Array of merger tree weights
+    """
     outputs = outfile['Outputs']    
     nodeData = outputs['Output1']['nodeData']
     Mhs = nodeData['basicMass'][:]
@@ -43,7 +65,23 @@ def get_Muv_from_hdf5(outfile):
     return data, treeWeights
 
 
-def load_data(data_dir, z, reload=False):
+def load_data(data_dir: str, z: str, reload: bool = False) -> tuple:
+    """Load stellar mass function data from Galacticus output.
+
+    Parameters
+    ----------
+    data_dir : str
+        Directory containing Galacticus HDF5 files.
+    z : str
+        Redshift as string (e.g., '8.0').
+    reload : bool, optional
+        If True, force reload from HDF5. Default is False.
+
+    Returns
+    -------
+    tuple
+        Tuple containing stellar masses, redshifts, and halo masses.
+    """
     stellar_masses = []
     zs = []
     fn = data_dir+f'z{z}.hdf5'

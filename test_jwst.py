@@ -1,3 +1,12 @@
+"""
+Statistical test comparing model predictions with JWST observations.
+
+This module performs the Peacock test (using the ndtest package) to
+statistically compare the model's predicted magnitude-redshift distribution
+with the observed JWST data. The test evaluates whether the two distributions
+are consistent.
+"""
+
 import numpy as np
 import ndtest
 import pandas as pd

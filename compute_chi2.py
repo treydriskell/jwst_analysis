@@ -1,3 +1,11 @@
+"""
+Compute chi-squared statistics for model comparison.
+
+This script calculates chi-squared values comparing the best-fit model UVLF
+predictions with observational data from NGDEEP, CEERS, and HST surveys at
+multiple redshifts. Uses asymmetric error bars (different upper/lower errors)
+when computing chi-squared contributions.
+"""
 
 import h5py
 import numpy as np

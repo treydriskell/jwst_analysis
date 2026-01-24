@@ -1,3 +1,12 @@
+"""
+Plot UV luminosity functions showing parameter sensitivity.
+
+This module generates UVLF plots demonstrating how the UV luminosity function
+varies as individual astrophysical parameters are changed while keeping other
+parameters fixed at their best-fit values. Creates separate plots for each
+parameter showing multiple parameter values.
+"""
+
 import h5py
 import numpy as np
 import os.path as path
@@ -30,7 +39,24 @@ mpl.rcParams['font.serif'] = ['Times New Roman']
 mpl.rcParams['mathtext.fontset'] = 'cm'
 
 
-def parameters_to_labels(parameters):
+def parameters_to_labels(parameters: list) -> str:
+    """Convert parameter name to LaTeX label.
+
+    Parameters
+    ----------
+    parameters : list
+        List containing a single parameter name string.
+
+    Returns
+    -------
+    str
+        LaTeX-formatted label for the parameter.
+
+    Raises
+    ------
+    Exception
+        If an unknown parameter name is encountered.
+    """
     labels = []
     # for p in parameters:
     if p == 'outflow_velocity':
@@ -55,7 +81,19 @@ def parameters_to_labels(parameters):
         raise Exception('Unknown Astro Parameter')
     return tex #labels
 
-def title_labels(p):
+def title_labels(p: str) -> str:
+    """Get title label for a parameter.
+
+    Parameters
+    ----------
+    p : str
+        Parameter name.
+
+    Returns
+    -------
+    str
+        LaTeX-formatted title label for the parameter.
+    """
     # tex = tex_labels(p)
     if p=='outflow_alpha':
         label = r'$\mathrm{Feedback\, Exponent}\, \alpha_{\mathrm{outflow}}$'
@@ -67,7 +105,19 @@ def title_labels(p):
         label = r'$\mathrm{Feedback\,Norm.}\,V_{\mathrm{outflow}}$'
     return label
 
-def tex_labels(p):
+def tex_labels(p: str) -> str:
+    """Get LaTeX symbol for a parameter.
+
+    Parameters
+    ----------
+    p : str
+        Parameter name.
+
+    Returns
+    -------
+    str
+        LaTeX-formatted symbol for the parameter.
+    """
     if p=='outflow_alpha':
         label = r'$\alpha_{\mathrm{outflow}}$'
     if p=='sfr_alpha':

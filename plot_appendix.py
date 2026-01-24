@@ -1,3 +1,9 @@
+"""
+Generate appendix figures for the publication.
+
+This module creates additional figures for the paper appendix, including
+supplementary plots and alternative visualizations of the results.
+"""
 
 import h5py
 import numpy as np

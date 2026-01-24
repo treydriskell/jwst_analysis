@@ -1,3 +1,10 @@
+"""
+Plot test results for lower tau0 parameter analysis.
+
+This module creates visualization plots for the lower tau0 likelihood
+analysis, showing how the likelihood varies with tau0 values.
+"""
+
 import numpy as np
 import os.path as path
 import matplotlib as mpl

@@ -1,3 +1,10 @@
+"""
+Plot likelihood analysis for lower tau0 parameter values.
+
+This module generates plots exploring the likelihood landscape for
+lower values of the star formation timescale parameter (tau0),
+used for parameter space exploration and sensitivity analysis.
+"""
 
 import h5py
 import numpy as np

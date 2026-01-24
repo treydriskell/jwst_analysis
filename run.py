@@ -1,8 +1,35 @@
+"""
+Master script to run the complete JWST analysis pipeline.
+
+This script orchestrates the execution of all analysis and plotting scripts
+in the correct order. It can optionally run the computationally expensive
+analysis step, then generates all publication figures.
+"""
+
 import os.path as path
 import subprocess
 from argparse import ArgumentParser
 
-def run(command, dryrun=False):
+
+def run(command: list, dryrun: bool = False) -> None:
+    """Execute a shell command with error handling.
+
+    Runs a command using subprocess and prints detailed output including
+    stdout, stderr, and exit codes. Handles errors gracefully.
+
+    Parameters
+    ----------
+    command : list
+        List of strings representing the command and its arguments.
+    dryrun : bool, optional
+        If True, only prints the command without executing it.
+        Default is False.
+
+    Returns
+    -------
+    None
+        Prints command output to console.
+    """
     print('Running ' + ' '.join(command))
     if dryrun:
         return
@@ -25,7 +52,7 @@ def run(command, dryrun=False):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="")
+    parser = ArgumentParser(description="Run complete JWST analysis pipeline")
     parser.add_argument("--dryrun", action='store_true', help="Do a dryrun")
     parser.add_argument("--run_analysis", action='store_true', help="Run the analysis pipeline")
     parser.add_argument("--n_jobs", type=int, default=1, help="Number of jobs to run for analysis")

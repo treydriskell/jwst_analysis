@@ -1,3 +1,11 @@
+"""
+Compare model predictions with Galform semi-analytic model.
+
+This module generates comparison plots between the Galacticus-based model
+and the Galform semi-analytic galaxy formation model, showing UV luminosity
+functions at different redshifts.
+"""
+
 import h5py
 import numpy as np
 import os.path as path
@@ -26,7 +34,19 @@ global cosmo
 cosmo = FlatLambdaCDM(H0=67.36000, Om0=0.31530, Tcmb0=2.72548, Ob0=0.04930)
 h = 0.7
 
-def get_Muv_from_hdf5(outfile):
+def get_Muv_from_hdf5(outfile) -> tuple:
+    """Extract UV magnitude and halo mass data from Galacticus HDF5 file.
+
+    Parameters
+    ----------
+    outfile : h5py.File
+        Open HDF5 file object from Galacticus.
+
+    Returns
+    -------
+    tuple
+        Tuple containing data array and tree weights.
+    """
     outputs = outfile['Outputs']    
     nodeData = outputs['Output1']['nodeData']
     Mhs = nodeData['basicMass'][:]

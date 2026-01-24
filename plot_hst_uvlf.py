@@ -1,3 +1,10 @@
+"""
+Plot HST UV luminosity function comparison.
+
+This module generates plots comparing the model UVLF predictions with
+HST observational data at z~8. Used to validate the model against
+independent high-redshift observations.
+"""
 
 import h5py
 import numpy as np

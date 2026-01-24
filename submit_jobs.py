@@ -1,4 +1,11 @@
-# submit_jobs.py
+"""
+Job submission script for running Galacticus simulations on HPC clusters.
+
+This module generates SLURM job scripts and Galacticus XML input files for
+parameter space exploration. It reads parameter configurations from YAML
+files and creates batch jobs to run Galacticus simulations across the
+parameter space.
+"""
 
 import numpy as np
 import os
@@ -10,7 +17,36 @@ import yaml
 from argparse import ArgumentParser
 
 
-def create_xml(astro_params, outdir, values, param_paths, z):
+def create_xml(
+    astro_params: dict, 
+    outdir: str, 
+    values: list, 
+    param_paths: list, 
+    z: str
+) -> str:
+    """Create a Galacticus XML input file for a parameter combination.
+
+    Reads a template XML file and modifies parameter values, redshift, and
+    output filenames according to the specified parameter combination.
+
+    Parameters
+    ----------
+    astro_params : dict
+        Dictionary containing configuration including 'xml_template' path.
+    outdir : str
+        Output directory for the XML and HDF5 files.
+    values : list
+        List of parameter values to set.
+    param_paths : list
+        List of XML paths (XPath-like) to parameter elements.
+    z : str
+        Redshift value as a string (e.g., '8.0').
+
+    Returns
+    -------
+    str
+        Path to the created XML file.
+    """
     template_xml = astro_params['xml_template']
     tree = ET.parse(template_xml)
     root = tree.getroot()
@@ -36,7 +72,37 @@ def create_xml(astro_params, outdir, values, param_paths, z):
     return xml_fn
 
 
-def create_jobs_from_list(args, astro_params, xml_fns, initial,final):
+def create_jobs_from_list(
+    args, 
+    astro_params: dict, 
+    xml_fns: list, 
+    initial: int, 
+    final: int
+) -> str:
+    """Create a SLURM job script from a list of XML files.
+
+    Generates a SLURM batch job script that runs multiple Galacticus
+    simulations. The job script is created from a template and includes
+    commands to run Galacticus for each XML file.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments containing job_directory and template_job_file.
+    astro_params : dict
+        Dictionary containing 'param_dir' for naming.
+    xml_fns : list
+        List of XML file paths to include in the job.
+    initial : int
+        Starting parameter index (for job naming).
+    final : int
+        Ending parameter index (for job naming).
+
+    Returns
+    -------
+    str
+        Path to the created job script file.
+    """
     template_job = args.template_job_file
     fn_base = astro_params['param_dir']+'_pi{}_pf{}'.format(initial,final)
     with open(template_job, 'r') as f:
@@ -56,7 +122,29 @@ def create_jobs_from_list(args, astro_params, xml_fns, initial,final):
     return job_fn
 
 
-def run(args):
+def run(args) -> None:
+    """Main function to generate and submit Galacticus simulation jobs.
+
+    Reads parameter configuration from YAML, generates XML input files for
+    all parameter combinations, creates SLURM job scripts, and optionally
+    submits them to the queue.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments including:
+        - yaml_file: Path to YAML parameter configuration
+        - job_directory: Directory for job scripts
+        - output_directory: Directory for simulation outputs
+        - template_job_file: Path to SLURM job template
+        - dryrun: If True, don't submit jobs
+        - n_params_per_job: Number of parameter combinations per job
+
+    Returns
+    -------
+    None
+        Creates XML files and job scripts, optionally submits jobs.
+    """
     yaml_fn = args.yaml_file
 
     with open(yaml_fn, 'r') as f:

@@ -1,3 +1,14 @@
+"""
+Plotting module for JWST analysis results.
+
+This module provides functions to generate publication-quality figures including:
+- Galaxy-halo connection probability distributions
+- UV luminosity functions with observational data
+- Parameter posterior distributions (corner plots)
+- Halo mass probability distributions
+- Confidence intervals and uncertainty visualizations
+"""
+
 import numpy as np
 import os.path as path
 import matplotlib as mpl
@@ -37,16 +48,30 @@ def _get_confidence_intervals_bounds(
     magnitude_grid: NDArray, 
     probs: NDArray,
 ) -> tuple[NDArray, NDArray, NDArray, NDArray, NDArray]:
-    """ Gets confidence intervals bounds from pdf array for plotting. 
+    """Get confidence interval bounds from probability distribution array.
 
-    This is a helper function specifically for plotting purposes.
-    
-    Args:
-        magnitude_grid: Magnitude grid.
-        probs: Array of probabilities.
-    Returns:
-        Tuple of peak, one sigma upper, two sigma upper, one sigma lower,
-        and two sigma lower bounds."""
+    Helper function for plotting that extracts 1-sigma and 2-sigma confidence
+    intervals from probability distributions. Finds the peak and determines
+    upper/lower bounds where the probability drops to exp(-0.5) and exp(-2.0)
+    relative to the peak.
+
+    Parameters
+    ----------
+    magnitude_grid : NDArray
+        Grid of magnitudes on which probabilities are evaluated.
+    probs : NDArray
+        Array of shape (n_mag, n_mass_bins) containing probability distributions.
+
+    Returns
+    -------
+    tuple[NDArray, NDArray, NDArray, NDArray, NDArray]
+        Tuple containing (in order):
+        - peak: Peak magnitude for each mass bin
+        - one_sigma_upper: Upper 1-sigma bound
+        - two_sigma_upper: Upper 2-sigma bound
+        - one_sigma_lower: Lower 1-sigma bound
+        - two_sigma_lower: Lower 2-sigma bound
+    """
     nm = probs.shape[1]
     peak = []
     one_sigma_upper = []
@@ -93,20 +118,34 @@ def plot_probs(
     data_directory: str, 
     do_abs: bool,
     do_skewed: bool,
-):
-    """ Function to plot the data and pdf of the fit to the g-h connection.
+) -> None:
+    """Plot galaxy-halo connection data and fitted probability distributions.
 
-    Args:
-        data_log_halo_mass: Array of log halo masses.
-        data_magnitudes: Array of magnitudes.
-        redshift: Array of redshifts.
-        means: Array of mean values.
-        sigmas: Array of standard deviation values.
-        mins: Array of minimum magnitude per halo mass.
-        maxs: Array of maximum magnitude per halo mass.
-        data_directory: Directory to save data.
-        output_tag: Tag for output files.
-        do_abs: Flag to determine absolute magnitude.
+    Creates scatter plots of simulated galaxy data overlaid with confidence
+    intervals (1-sigma and 2-sigma) from the fitted galaxy-halo connection
+    model. Also marks the 5-sigma limiting depths of NGDEEP and CEERS surveys.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        DataFrame containing simulated galaxy data with columns: 'redshift',
+        'log_halo_mass', 'absolute_magnitude', 'apparent_magnitude'.
+    stats : analysis.Stats
+        Statistics object containing fitted parameters for the galaxy-halo
+        connection.
+    data_directory : str
+        Directory containing the analysis results (used to load PDFs).
+    do_abs : bool
+        If True, plot absolute magnitudes; if False, plot apparent magnitudes.
+    do_skewed : bool
+        If True, use skewed probability distributions; if False, use normal
+        distributions.
+
+    Returns
+    -------
+    None
+        Saves figure to 'absolute_sim_data_and_fit.pdf' or
+        'apparent_sim_data_and_fit.pdf' in the current directory.
     """
     # simple adjustments can be made to show multiple redshifts
     plot_redshifts = [12.0]
@@ -195,11 +234,36 @@ def _average_uvlf(
     magnitude_grid: NDArray, 
     volumes: NDArray, 
     app_cutoff: float,
-):
-    """ Averages the UVLF over a redshift range.
+) -> NDArray:
+    """Average UV luminosity function over a redshift range.
 
-    Applies a cutoff during the average based on 5 sigma limiting depth of the
-    survey. 
+    Computes volume-weighted average of the UVLF over a specified redshift
+    range. Applies a magnitude cutoff based on the 5-sigma limiting depth of
+    the survey, accounting for redshift-dependent distance modulus and
+    k-correction.
+
+    Parameters
+    ----------
+    redshifts : NDArray
+        Array of redshift values.
+    lower_bound : float
+        Lower redshift bound for averaging.
+    upper_bound : float
+        Upper redshift bound for averaging.
+    uvlf : NDArray
+        UV luminosity function array, shape (n_mag, n_z).
+    magnitude_grid : NDArray
+        Grid of absolute magnitudes.
+    volumes : NDArray
+        Comoving volumes for each redshift bin.
+    app_cutoff : float
+        Apparent magnitude cutoff (5-sigma limiting depth).
+
+    Returns
+    -------
+    NDArray
+        Volume-weighted average UVLF over the specified redshift range,
+        shape (n_mag,).
     """
     dz = redshifts[1]-redshifts[0]
     # do_old = True
@@ -230,12 +294,29 @@ def _average_uvlf(
     averaged_uvlf /= totalV
     return averaged_uvlf
 
-def _plot_survey_uvlf_data(ax1: plt.Axes, ax2: plt.Axes):
-    """ Adds the survey data to the UVLF plot.
+def _plot_survey_uvlf_data(ax1: plt.Axes, ax2: plt.Axes) -> None:
+    """Add observational survey data to UVLF plots.
     
-    Args:
-        ax1: plt.Axes for the z~9 plot.
-        ax2: plt.Axes for the z~11 plot.
+    Plots NGDEEP and CEERS survey data points with error bars on the UVLF
+    plots. Includes both 1-sigma and 2-sigma error bars, and upper limits
+    where applicable.
+
+    Parameters
+    ----------
+    ax1 : plt.Axes
+        Axes object for the z~9 plot panel.
+    ax2 : plt.Axes
+        Axes object for the z~11 plot panel.
+
+    Returns
+    -------
+    None
+        Modifies the axes objects in place.
+
+    References
+    ----------
+    .. [1] Leung et al. 2023 (NGDEEP survey)
+    .. [2] Finkelstein et al. 2023 (CEERS survey)
     """
     ngdeep_muv = [-20.1, -19.1, -18.35, -17.85, -17.35]
     ngdeep_phi = np.array([14.7e-5, 18.9e-5, 74.0e-5, 170.0e-5, 519.0e-5])
@@ -314,10 +395,40 @@ def plot_uvlf(
     volumes: NDArray, 
     data_directory: str,
     axs: plt.Axes=None,
-    c: str='k', # its not only a string, don't know how to type hint this
+    c: str='k',
     save: bool=True,
-):
-    """ Plots the uvlf with survey data overlaid. 
+) -> None:
+    """Plot UV luminosity function with observational survey data overlaid.
+
+    Creates a two-panel figure showing the UVLF at z~9 (left) and z~11 (right)
+    with NGDEEP and CEERS observational data points. The model UVLF is
+    averaged over the redshift ranges 8.5<z<9.5 and 9.5<z<12.0.
+
+    Parameters
+    ----------
+    magnitude_grid : NDArray
+        Grid of absolute magnitudes.
+    redshifts : NDArray
+        Array of redshift values.
+    uvlf : NDArray
+        UV luminosity function array, shape (n_mag, n_z).
+    volumes : NDArray
+        Comoving volumes for each redshift bin.
+    data_directory : str
+        Directory where the figure will be saved.
+    axs : plt.Axes, optional
+        Pre-existing axes objects. If None, creates new figure and axes.
+        Default is None.
+    c : str, optional
+        Color for the model UVLF line. Default is 'k' (black).
+    save : bool, optional
+        If True, saves the figure to 'uvlf.pdf' in data_directory.
+        Default is True.
+
+    Returns
+    -------
+    None
+        Creates and optionally saves the plot.
     """
     # print("plot uvlf")
     app_cutoff = 30.4
@@ -358,7 +469,29 @@ def plot_uvlf(
         plt.close('all')
 
 
-def plot_sampled_uvlf(file_base, df, bestfit_uvlf):
+def plot_sampled_uvlf(file_base: str, df: pd.DataFrame, bestfit_uvlf: NDArray) -> None:
+    """Plot UVLF with confidence intervals from parameter sampling.
+
+    Creates UVLF plots showing the best-fit model and confidence intervals
+    (68% and 95%) computed from a sample of parameter combinations weighted
+    by their likelihoods. The sampling is done with replacement using the
+    likelihood values as weights.
+
+    Parameters
+    ----------
+    file_base : str
+        Base path to parameter directories (e.g., 'paper_params').
+    df : pd.DataFrame
+        DataFrame containing parameter combinations and their likelihoods.
+        Must have columns: 'idx', 'like'.
+    bestfit_uvlf : NDArray
+        UVLF array for the best-fit parameter combination.
+
+    Returns
+    -------
+    None
+        Saves figure to 'sampled_uvlf_CI.pdf' in the current directory.
+    """
     app_cutoff = 30.4
     f, axs = plt.subplots(1, 2, figsize=(12,5),constrained_layout=True, sharey=True)
 
@@ -478,8 +611,31 @@ def plot_sampled_uvlf(file_base, df, bestfit_uvlf):
     plt.close('all')
 
 
-def plot_Mh_given_fixed_Muv(data_directory, abs_probs, bweights):
-    """Abs_probs is P(Muv|Mh) N_uv, N_z, N_h"""
+def plot_Mh_given_fixed_Muv(
+    data_directory: str, 
+    abs_probs: NDArray, 
+    bweights: NDArray
+) -> None:
+    """Plot conditional probability distribution P(M_h | M_UV) for fixed magnitudes.
+
+    Computes and plots the probability distribution of halo mass given a fixed
+    UV magnitude using Bayes' theorem: P(M_h|M_UV) ∝ P(M_UV|M_h) × P(M_h).
+
+    Parameters
+    ----------
+    data_directory : str
+        Directory where the figure will be saved.
+    abs_probs : NDArray
+        Probability array P(M_UV|M_h) with shape (n_mag, n_z, n_mass_bins).
+    bweights : NDArray
+        Binned merger tree weights (proportional to P(M_h)) with shape
+        (n_z, n_mass_bins).
+
+    Returns
+    -------
+    None
+        Saves figure to 'prob_mh_given_fixed_muv.pdf' in the current directory.
+    """
 
     ## just doing fixed z for illustration ##
     # f, axs = plt.subplots(3, 1, figsize=(6,15), constrained_layout=True)
@@ -513,8 +669,31 @@ def plot_Mh_given_fixed_Muv(data_directory, abs_probs, bweights):
     plt.close('all')
     
 
-def plot_Mh_from_data(data_directory, app_probs, bweights):
-    """Abs_probs is P(Muv|Mh) N_uv, N_z, N_h"""
+def plot_Mh_from_data(
+    data_directory: str, 
+    app_probs: NDArray, 
+    bweights: NDArray
+) -> None:
+    """Plot posterior probability distribution P(M_h | data).
+
+    Computes the posterior probability distribution of halo mass given the
+    observed galaxy data by marginalizing over redshift and apparent magnitude
+    uncertainties. Combines NGDEEP and CEERS survey data.
+
+    Parameters
+    ----------
+    data_directory : str
+        Directory where the figure will be saved.
+    app_probs : NDArray
+        Probability array P(m_app|M_h) with shape (n_mag, n_z, n_mass_bins).
+    bweights : NDArray
+        Binned merger tree weights with shape (n_z, n_mass_bins).
+
+    Returns
+    -------
+    None
+        Saves figure to 'prob_mh_given_data.pdf' in data_directory.
+    """
     # f, axs = plt.subplots(3, 1, figsize=(6,15), constrained_layout=True)
     zidx = analysis.redshift_grid >= 8.5
     P_mh = bweights / np.sum(bweights, axis=1).reshape(-1,1) # bweights should be z by Mh
@@ -541,8 +720,31 @@ def plot_Mh_from_data(data_directory, app_probs, bweights):
     plt.close('all')
 
 
-def plot_Mh_from_data_z(data_directory, app_probs, bweights):
-    """Abs_probs is P(Muv|Mh) N_uv, N_z, N_h"""
+def plot_Mh_from_data_z(
+    data_directory: str, 
+    app_probs: NDArray, 
+    bweights: NDArray
+) -> None:
+    """Plot posterior probability distribution P(M_h | data) for different redshift bins.
+
+    Similar to `plot_Mh_from_data`, but shows the posterior distribution
+    separately for different redshift ranges (8.5≤z<9.5, 9.5≤z<12.0, and all z)
+    to illustrate how the inferred halo mass distribution varies with redshift.
+
+    Parameters
+    ----------
+    data_directory : str
+        Directory where the figure will be saved.
+    app_probs : NDArray
+        Probability array P(m_app|M_h) with shape (n_mag, n_z, n_mass_bins).
+    bweights : NDArray
+        Binned merger tree weights with shape (n_z, n_mass_bins).
+
+    Returns
+    -------
+    None
+        Saves figure to 'prob_mh_given_data_z.pdf' in the current directory.
+    """
     # f, axs = plt.subplots(1, 2, figsize=(12,6), constrained_layout=True, sharey=True)
     interp_mh = np.linspace(8.0, 11.5, 1000)
 
@@ -602,7 +804,23 @@ def plot_Mh_from_data_z(data_directory, app_probs, bweights):
 
 
 def parameters_to_labels(parameters: list) -> list:
-    """ Returns list of latex labels for corresponding parameter strings. """
+    """Convert parameter names to LaTeX labels for plotting.
+
+    Parameters
+    ----------
+    parameters : list
+        List of parameter name strings.
+
+    Returns
+    -------
+    list
+        List of LaTeX-formatted labels for each parameter.
+
+    Raises
+    ------
+    Exception
+        If an unknown parameter name is encountered.
+    """
     labels = []
     for p in parameters:
         if (p == 'outflow_velocity') or (p=='velocityOutflow'):
@@ -620,11 +838,28 @@ def parameters_to_labels(parameters: list) -> list:
 
 
 def calculate_1d_posterior(df: pd.DataFrame, p1: str) -> NDArray:
-    """
-    Assuming all parameters are uniformly distributed (as is the case for our
-    sampling in https://arxiv.org/abs/2410.11680).
+    """Calculate 1D marginalized posterior distribution for a parameter.
 
-    Let's just do this two parameters at a time.
+    Computes the posterior probability distribution for a single parameter by
+    marginalizing over all other parameters. Assumes uniform priors, so the
+    posterior is proportional to the sum of likelihoods for each parameter value.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing parameter values and likelihoods. Must have
+        columns matching parameter names and a 'like' column.
+    p1 : str
+        Name of the parameter to marginalize over.
+
+    Returns
+    -------
+    NDArray
+        Normalized posterior probability distribution (max value = 1).
+
+    References
+    ----------
+    .. [1] https://arxiv.org/abs/2410.11680
     """
     parameter1_unique_values = df[p1].unique()
     parameter1_unique_values.sort()
@@ -639,11 +874,32 @@ def calculate_1d_posterior(df: pd.DataFrame, p1: str) -> NDArray:
 
 
 def calculate_2d_posterior(df: pd.DataFrame, p1: str, p2: str) -> NDArray:
-    """
-    Assuming all parameters are uniformly distributed (as is the case for our
-    sampling in https://arxiv.org/abs/2410.11680).
+    """Calculate 2D marginalized posterior distribution for two parameters.
 
-    Let's just do this two parameters at a time.
+    Computes the joint posterior probability distribution for two parameters
+    by marginalizing over all other parameters. Assumes uniform priors, so the
+    posterior is proportional to the sum of likelihoods for each parameter
+    combination.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing parameter values and likelihoods. Must have
+        columns matching parameter names and a 'like' column.
+    p1 : str
+        Name of the first parameter.
+    p2 : str
+        Name of the second parameter.
+
+    Returns
+    -------
+    NDArray
+        2D array of normalized posterior probabilities (max value = 1),
+        shape (n_unique_p1, n_unique_p2).
+
+    References
+    ----------
+    .. [1] https://arxiv.org/abs/2410.11680
     """
     parameter1_unique_values = df[p1].unique()
     parameter1_unique_values.sort()
@@ -661,7 +917,39 @@ def calculate_2d_posterior(df: pd.DataFrame, p1: str, p2: str) -> NDArray:
     return marginalized_posterior / norm
 
 
-def label_axis(axs, i, j, labels, uniques, parameters):
+def label_axis(
+    axs: np.ndarray, 
+    i: int, 
+    j: int, 
+    labels: list, 
+    uniques: list, 
+    parameters: list
+) -> None:
+    """Set axis labels for corner plot panels.
+
+    Helper function for creating corner plots that sets appropriate axis
+    labels and tick visibility based on panel position.
+
+    Parameters
+    ----------
+    axs : np.ndarray
+        2D array of axes objects.
+    i : int
+        Row index of the panel.
+    j : int
+        Column index of the panel.
+    labels : list
+        List of LaTeX labels for each parameter.
+    uniques : list
+        List of unique parameter values for each parameter.
+    parameters : list
+        List of parameter names.
+
+    Returns
+    -------
+    None
+        Modifies axes objects in place.
+    """
     ax = axs[i,j]
     pi = parameters[i]
     pj = parameters[j]
@@ -678,7 +966,24 @@ def label_axis(axs, i, j, labels, uniques, parameters):
         ax.set_xlabel(labels[j])
 
 
-def get_flat_data_points(p,data):
+def get_flat_data_points(p: str, data: NDArray) -> NDArray:
+    """Create flat data points for pcolormesh plotting.
+
+    Adds half-bin-width offsets to data points to create proper bin edges
+    for pcolormesh, which requires edges rather than centers.
+
+    Parameters
+    ----------
+    p : str
+        Parameter name (unused, kept for compatibility).
+    data : NDArray
+        Array of bin center values.
+
+    Returns
+    -------
+    NDArray
+        Array of bin edges with one extra element.
+    """
     new_data = np.zeros(len(data)+1)
     delta = (data[1]-data[0])/2.0
     new_data[0] = data[0]-delta
@@ -686,13 +991,40 @@ def get_flat_data_points(p,data):
     return new_data
 
 
-def plot_1d(i, ax, values, tab_prob_1d, label):
-    """ Plots the 1d marginalized posterior for parameter i. 
-    
-    Includes shaded 68% and 95% confidence intervals. Since the distributions 
-    are skewed, this is done by handing, adding up the probabilities until 
-    symmetrically around the peak of the distribution until the desired area 
-    under the curve is attained. """
+def plot_1d(
+    i: int, 
+    ax: plt.Axes, 
+    values: NDArray, 
+    tab_prob_1d: NDArray, 
+    label: str
+) -> None:
+    """Plot 1D marginalized posterior with confidence intervals.
+
+    Plots the 1D posterior distribution with shaded 68% and 95% confidence
+    intervals. Since distributions may be skewed, confidence intervals are
+    computed by symmetrically expanding around the peak until the desired
+    probability mass is contained.
+
+    Parameters
+    ----------
+    i : int
+        Parameter index (for identification/debugging).
+    ax : plt.Axes
+        Axes object on which to plot.
+    values : NDArray
+        Array of parameter values.
+    tab_prob_1d : NDArray
+        Array of posterior probabilities corresponding to values.
+    label : str
+        LaTeX label for the parameter (currently unused but kept for
+        compatibility).
+
+    Returns
+    -------
+    None
+        Modifies the axes object in place. Prints confidence interval
+        information to console.
+    """
     originalProb = np.array(tab_prob_1d)
     # prob /= np.sum(prob)
     interp_values = np.linspace(np.amin(values), np.amax(values), (len(values)-1)*10+1)
@@ -770,7 +1102,27 @@ def plot_1d(i, ax, values, tab_prob_1d, label):
                     zorder=-999, alpha=0.3)
 
 
-def plot_astro_like(df, parameters):
+def plot_astro_like(df: pd.DataFrame, parameters: list) -> None:
+    """Create corner plot (triangle plot) of parameter posterior distributions.
+
+    Generates a corner plot showing 1D marginalized posteriors on the diagonal
+    and 2D joint posteriors in the lower triangle. The upper triangle is left
+    blank. Uses a colormap to show posterior probability density.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing parameter values and likelihoods. Must have
+        columns matching parameter names and a 'like' column.
+    parameters : list
+        List of parameter names to include in the corner plot.
+
+    Returns
+    -------
+    None
+        Saves figure to 'triangle_like.pdf' in the current directory.
+        Prints maximum likelihood parameter values to console.
+    """
     labels = parameters_to_labels(parameters)
     # df['like'] = like
     maxidx = df['like'].idxmax()

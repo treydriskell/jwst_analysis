@@ -9,6 +9,10 @@ This module provides functions to generate publication-quality figures including
 - Confidence intervals and uncertainty visualizations
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import numpy as np
 import os.path as path
 import matplotlib as mpl
@@ -1173,7 +1177,7 @@ def plot_astro_like(df: pd.DataFrame, parameters: list) -> None:
 
 do_skewed = False
 
-df = pd.read_csv('paper_params.csv')
+df = pd.read_csv('data/paper_params.csv')
 # df = df.sort_values('loglike', ascending=False)
 # df.insert(len(df.columns), 'like', np.exp(df['loglike']))
 # df.rename(columns={'Unnamed: 0':'idx'},inplace=True)

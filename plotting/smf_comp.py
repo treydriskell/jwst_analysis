@@ -6,6 +6,10 @@ with observational data from various surveys. Used for validation and
 comparison of the galaxy formation model.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import h5py
 import numpy as np
 import os.path as path

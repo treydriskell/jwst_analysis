@@ -7,6 +7,10 @@ distributions. Used to visualize the redshift uncertainties in the
 observational data.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import numpy as np
 import os
 import pandas as pd

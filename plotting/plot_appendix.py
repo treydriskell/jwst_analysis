@@ -5,6 +5,10 @@ This module creates additional figures for the paper appendix, including
 supplementary plots and alternative visualizations of the results.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import h5py
 import numpy as np
 # import os

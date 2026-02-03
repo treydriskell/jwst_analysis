@@ -7,6 +7,10 @@ parameters fixed at their best-fit values. Creates separate plots for each
 parameter showing multiple parameter values.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import h5py
 import numpy as np
 import os.path as path
@@ -39,18 +43,18 @@ mpl.rcParams['font.serif'] = ['Times New Roman']
 mpl.rcParams['mathtext.fontset'] = 'cm'
 
 
-def parameters_to_labels(parameters: list) -> str:
-    """Convert parameter name to LaTeX label.
+def parameters_to_labels(parameters: list) -> list:
+    """Convert parameter names to LaTeX labels.
 
     Parameters
     ----------
     parameters : list
-        List containing a single parameter name string.
+        List of parameter name strings.
 
     Returns
     -------
-    str
-        LaTeX-formatted label for the parameter.
+    list
+        List of LaTeX-formatted labels for each parameter.
 
     Raises
     ------
@@ -58,28 +62,25 @@ def parameters_to_labels(parameters: list) -> str:
         If an unknown parameter name is encountered.
     """
     labels = []
-    # for p in parameters:
-    if p == 'outflow_velocity':
-        # tex = r'$\mathrm{Log}(V_{\mathrm{outflow}})$'
-        tex = r'$\left(V_{\mathrm{outflow}}\right)$'
-    elif p == 'outflow_alpha':
-        # tex = r'$\mathrm{Log}(\alpha_{\mathrm{outflow}})$'
-        tex = r'$\left(\alpha_{\mathrm{outflow}}\right)$'
-    elif p == 'starFormationFrequencyNormalization':
-        # tex = r'$\mathrm{Log}(\nu_{0,\mathrm{SF}})$'
-        tex = r'$\nu_{0,\mathrm{SF}}$'
-    elif p == 'surfaceDensityExponent':
-        # tex = r'$\mathrm{Log}(\alpha_{\mathrm{HI}})$'
-        tex = r'$\alpha_{\mathrm{HI}}$'
-    elif p == 'efficiency':
-        tex = r'$\epsilon_{\star}$'
-    elif p == 'sfr_timescale':
-        tex = r'$\left(\tau_{0}\right)$'
-    elif p == 'sfr_alpha':
-        tex = r'$\left(\alpha_{\star}\right)$'
-    else:
-        raise Exception('Unknown Astro Parameter')
-    return tex #labels
+    for p in parameters:
+        if p == 'outflow_velocity':
+            tex = r'$\left(V_{\mathrm{outflow}}\right)$'
+        elif p == 'outflow_alpha':
+            tex = r'$\left(\alpha_{\mathrm{outflow}}\right)$'
+        elif p == 'starFormationFrequencyNormalization':
+            tex = r'$\nu_{0,\mathrm{SF}}$'
+        elif p == 'surfaceDensityExponent':
+            tex = r'$\alpha_{\mathrm{HI}}$'
+        elif p == 'efficiency':
+            tex = r'$\epsilon_{\star}$'
+        elif p == 'sfr_timescale':
+            tex = r'$\left(\tau_{0}\right)$'
+        elif p == 'sfr_alpha':
+            tex = r'$\left(\alpha_{\star}\right)$'
+        else:
+            raise Exception('Unknown Astro Parameter')
+        labels.append(tex)
+    return labels
 
 def title_labels(p: str) -> str:
     """Get title label for a parameter.
@@ -138,7 +139,7 @@ def tex_labels(p: str) -> str:
 # d = vOutflow
 
 base_dir = '/carnegie/scidata/groups/dmtheory/jwst_simulated_data'
-df = pd.read_csv('paper_params.csv')
+df = pd.read_csv('data/paper_params.csv')
 
 cmaps = ['ember', 'amythest', 'freeze', 'nuclear']
 

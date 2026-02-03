@@ -6,6 +6,10 @@ HST observational data at z~8. Used to validate the model against
 independent high-redshift observations.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import h5py
 import numpy as np
 import os
@@ -217,7 +221,7 @@ plot_data(plt.gca())
 
 
 base_dir = '/carnegie/scidata/groups/dmtheory/jwst_simulated_data/'
-df = pd.read_csv('paper_params.csv')
+df = pd.read_csv('data/paper_params.csv')
 df = df.sort_values('loglike', ascending=False)
 df.insert(len(df.columns), 'like', np.exp(df['loglike']))
 

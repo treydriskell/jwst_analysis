@@ -6,6 +6,10 @@ lower values of the star formation timescale parameter (tau0),
 used for parameter space exploration and sensitivity analysis.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import h5py
 import numpy as np
 # import os
@@ -39,7 +43,7 @@ rng = np.random.default_rng()
 
 f, axs = plt.subplots(1, 2, figsize=(12,5),constrained_layout=True)
 
-df = pd.read_csv('test_lower_tau0.csv')
+df = pd.read_csv('data/test_lower_tau0.csv')
 df.sort_values(by='sfr_timescale', inplace=True)
 
 axs[0].plot(df['sfr_timescale'], df['like'])

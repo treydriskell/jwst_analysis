@@ -1317,10 +1317,10 @@ def save_results(loglikes: list, initial: int, final: int,
     data = np.array([outflow_velocities, outflow_alphas, sfr_timescales, 
                         sfr_alphas, loglikes]).T
     df = pd.DataFrame(data, columns=columns, index=idxs)
-    if len(outfilename)>0:
-        output_csv_filename = f'{outfilename}.csv'
+    if len(outfilename) > 0:
+        output_csv_filename = path.join('data', f'{outfilename}.csv')
     else:
-        output_csv_filename = f'{dirname}.csv'
+        output_csv_filename = path.join('data', f'{dirname}.csv')
     print(f'Saving to {output_csv_filename}')
 
     df.rename(columns={'Unnamed: 0':'idx'},inplace=True)

@@ -6,6 +6,10 @@ and the Galform semi-analytic galaxy formation model, showing UV luminosity
 functions at different redshifts.
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import h5py
 import numpy as np
 import os.path as path

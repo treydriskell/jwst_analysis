@@ -66,22 +66,22 @@ if __name__ == "__main__":
                     '--initial', '0', '--final', '73599', '--save', '--n_jobs', f'{args.n_jobs}']
         run(command, args.dryrun)
 
-    command = ['python', 'plotting.py']
+    command = ['python', 'plotting/plotting.py']
     run(command, args.dryrun)
 
-    command = ['python', 'astro_uvlf.py']
+    command = ['python', 'plotting/astro_uvlf.py']
     run(command, args.dryrun)
 
-    command = ['python', 'plot_muvz_data.py']
+    command = ['python', 'plotting/plot_muvz_data.py']
     run(command, args.dryrun)
 
-    command = ['python', 'galform_comparison.py']
+    command = ['python', 'plotting/galform_comparison.py']
     run(command, args.dryrun)
 
-    command = ['python', 'plot_hst_uvlf.py']
+    command = ['python', 'plotting/plot_hst_uvlf.py']
     run(command, args.dryrun)
     
-    command = ['python', 'smf_comp.py']
+    command = ['python', 'plotting/smf_comp.py']
     run(command, args.dryrun)
 
     command = ['python', 'compute_chi2.py']
@@ -90,5 +90,5 @@ if __name__ == "__main__":
     command = ['python', 'test_jwst.py']
     run(command, args.dryrun)
 
-    command = ['python', 'plot_appendix.py']
+    command = ['python', 'plotting/plot_appendix.py']
     run(command, args.dryrun)

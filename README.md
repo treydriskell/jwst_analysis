@@ -96,15 +96,17 @@ python analysis.py --help
 
 #### Plotting Scripts
 
-Each script generates specific figures for the publication:
+All plotting scripts live in the **`plotting/`** directory. Run them from the repository root (e.g. `python plotting/plotting.py`). Each script generates specific figures:
 
-- **`plotting.py`** - Generates Figures 2, 4, 6, and 8
-- **`astro_uvlf.py`** - Generates Figure 3 (UV luminosity function)
-- **`plot_muvz_data.py`** - Generates Figure 5 (magnitude-redshift data)
-- **`galform_comparison.py`** - Generates Figure 7 (Galform comparison)
-- **`plot_hst_uvlf.py`** - Generates left panel of Figure 9 (HST UVLF)
-- **`smf_comp.py`** - Generates right panel of Figure 9 (stellar mass function comparison)
-- **`plot_appendix.py`** - Generates appendix figures
+- **`plotting/plotting.py`** - Generates Figures 2, 4, 6, and 8
+- **`plotting/astro_uvlf.py`** - Generates Figure 3 (UV luminosity function)
+- **`plotting/plot_muvz_data.py`** - Generates Figure 5 (magnitude-redshift data)
+- **`plotting/galform_comparison.py`** - Generates Figure 7 (Galform comparison)
+- **`plotting/plot_hst_uvlf.py`** - Generates left panel of Figure 9 (HST UVLF)
+- **`plotting/smf_comp.py`** - Generates right panel of Figure 9 (stellar mass function comparison)
+- **`plotting/plot_appendix.py`** - Generates appendix figures
+- **`plotting/plot_lower_tau0_like.py`** - Generates lower tau0 likelihood plot (optional)
+- **`plotting/test_lower_tau0_plot.py`** - Plots lower tau0 test results (optional)
 
 **Important:** Scripts that require the best-fit parameter have the index hard-coded (currently 13845). If the best-fit index changes, you'll need to update these indices manually in the relevant scripts.
 
@@ -137,17 +139,22 @@ jwst_analysis/
 ├── compute_chi2.py          # Chi-squared computation
 ├── test_jwst.py             # Statistical tests
 │
-├── plotting.py              # Figures 2, 4, 6, 8
-├── astro_uvlf.py            # Figure 3
-├── plot_muvz_data.py        # Figure 5
-├── galform_comparison.py    # Figure 7
-├── plot_hst_uvlf.py         # Figure 9 (left)
-├── smf_comp.py              # Figure 9 (right)
-├── plot_appendix.py         # Appendix figures
+├── plotting/                # All plotting scripts (run from repo root)
+│   ├── plotting.py          # Figures 2, 4, 6, 8
+│   ├── astro_uvlf.py        # Figure 3
+│   ├── plot_muvz_data.py    # Figure 5
+│   ├── galform_comparison.py # Figure 7
+│   ├── plot_hst_uvlf.py     # Figure 9 (left)
+│   ├── smf_comp.py          # Figure 9 (right)
+│   ├── plot_appendix.py     # Appendix figures
+│   ├── plot_lower_tau0_like.py
+│   └── test_lower_tau0_plot.py
 │
 ├── data/                    # Observational data and processed files
 │   ├── CEERS_data.csv       # CEERS survey data
 │   ├── ngdeep_data.csv      # NGDEEP survey data
+│   ├── paper_params.csv     # Analysis results (likelihoods per parameter set)
+│   ├── test_lower_tau0.csv  # Lower tau0 test results
 │   ├── obs.txt              # UniverseMachine data (see attribution)
 │   ├── zgrid_hmfs.hdf5      # Halo mass function grid
 │   └── zgrid_weights.npy    # Redshift grid weights
